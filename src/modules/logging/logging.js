@@ -6,18 +6,6 @@ const logLevelDebug = 0,
   logLevelError = 3;
 
 let logLevel = logLevelInfo;
-/**
- * To show the source of the logs
- * @param {boolean=} isBot - If the log is from the bot or not
- * @returns {string} - 'Bot' or 'User' or ''
- */
-function workAs(isBot) {
-  if (isBot === undefined) {
-    return '';
-  } else {
-    return `${isBot ? 'Bot' : 'User'}| `;
-  }
-}
 
 /**
  * Set the log level
@@ -30,44 +18,40 @@ function setLogLevel(level) {
 /**
  * Log debug messages
  * @param {string} message - The message to log
- * @param {boolean=} isBot  - If the log is from the bot or not
  */
-function logDebug(message, isBot) {
+function logDebug(message) {
   if (logLevel <= logLevelDebug) {
-    console.log(`${workAs(isBot)}${message}`);
+    console.log(message);
   }
 }
 
 /**
  * Log informational messages
  * @param {string} message - The message to log
- * @param {boolean=} isBot  - If the log is from the bot or not
  */
-function logInfo(message, isBot) {
+function logInfo(message) {
   if (logLevel <= logLevelInfo) {
-    console.log(`${workAs(isBot)}${message}`);
+    console.log(message);
   }
 }
 
 /**
  * Log warnings
  * @param {string} message - The message to log
- * @param {boolean=} isBot  - If the log is from the bot or not
  */
-function logWarning(message, isBot) {
+function logWarning(message) {
   if (logLevel <= logLevelWarning) {
-    console.warn(`${workAs(isBot)}${message}`);
+    console.warn(message);
   }
 }
 
 /**
  * Log errors messages
  * @param {string} message - The message to log
- * @param {boolean=} isBot  - If the log is from the bot or not
  */
-function logError(message, isBot) {
+function logError(message) {
   if (logLevel <= logLevelError) {
-    console.error(`${workAs(isBot)}${message}`);
+    console.error(message);
   }
 }
 
