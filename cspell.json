@@ -5,6 +5,7 @@
     "dictionaryDefinitions": [],
     "dictionaries": [],
     "words": [
+        "APIURL",
         "arrowParens",
         "ecoflow",
         "genversion",
@@ -12,6 +13,7 @@
         "localstorage",
         "MTProto",
         "sonarjs",
+        "uuidv",
         "Voronov"
     ],
     "ignoreWords": [],
