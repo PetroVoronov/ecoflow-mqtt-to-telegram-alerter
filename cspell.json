@@ -1,0 +1,19 @@
+{
+    "version": "0.2",
+    "language": "en,uk,ru,de",
+    "ignorePaths": [],
+    "dictionaryDefinitions": [],
+    "dictionaries": [],
+    "words": [
+        "arrowParens",
+        "ecoflow",
+        "genversion",
+        "gramjs",
+        "localstorage",
+        "MTProto",
+        "sonarjs",
+        "Voronov"
+    ],
+    "ignoreWords": [],
+    "import": []
+}

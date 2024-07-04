@@ -128,3 +128,11 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+#script specifics
+sessions
+data
+.env
+
+#vscode workspace
+*.code-workspace
