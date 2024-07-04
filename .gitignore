@@ -130,9 +130,7 @@ dist
 .pnp.*
 
 #script specifics
-sessions
 data
-.env
 
 #vscode workspace
 *.code-workspace
