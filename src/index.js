@@ -445,6 +445,7 @@ getEcoFlowCredentials()
                                     if (currentInputState !== inputACConnectionState) {
                                       cache.setItem('inputACConnectionState', currentInputState);
                                       const message = i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off');
+                                      logInfo(message);
                                       const telegramMessage = {
                                         message: message,
                                       };
