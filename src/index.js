@@ -44,6 +44,13 @@ if (typeof topicId === 'number') cache.setItem('telegramTopicId', topicId);
 
 const options = yargs
   .usage('Usage: $0 [options]')
+  .option('l', {
+    alias: 'language',
+    describe: 'Language code for i18n',
+    type: 'string',
+    default: 'en',
+    demandOption: false,
+  })
   .option('b', {
     alias: 'as-bot',
     describe: 'Start as bot instance',
@@ -62,6 +69,8 @@ const options = yargs
   .epilog(`${scriptName} v${scriptVersion}`).argv;
 
 setLogLevel(options.debug ? logLevelDebug : logLevelInfo);
+
+i18n.setLocale(options.language);
 
 const storeSession = new StoreSession(`data/session/${options.asBot ? 'bot' : 'user'}`);
 
@@ -345,6 +354,10 @@ function gracefulExit() {
   }
 }
 
+function getRandomId() {
+  return BigInt(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
+}
+
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
@@ -450,12 +463,15 @@ getEcoFlowCredentials()
                                         message: message,
                                       };
                                       if (topicId > 0) {
-                                        telegramMessage.topMsgId = topicId;
+                                        telegramMessage.replyTo = topicId;
                                       }
-                                      telegramClient.sendMessage(targetEntity, telegramMessage);
+                                      telegramClient.sendMessage(targetEntity, telegramMessage).then(() => {
+                                        logDebug(`Telegram message sent to ${chatId} with topic ${topicId}`);
+                                      }).catch((error) => {
+                                        logError(`Telegram message error: ${error}`);
+                                      });
                                     }
                                   }
-                                  // client.end();
                                 });
                                 mqttClient.subscribe(`/app/device/property/${ecoflowDeviceSN}`, (error) => {
                                   if (error) {
