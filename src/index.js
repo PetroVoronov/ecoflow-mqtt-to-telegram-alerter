@@ -436,6 +436,7 @@ getEcoFlowCredentials()
                           .then((client) => {
                             logInfo('Telegram client is connected. Getting target entity ...');
                             telegramClient = client;
+                            telegramClient.setParseMode('html');
                             getTelegramTargetEntity()
                               .then((entity) => {
                                 logInfo('Telegram target entity is found. Subscribing to topic ...');
