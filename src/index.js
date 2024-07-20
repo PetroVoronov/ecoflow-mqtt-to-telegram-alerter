@@ -57,6 +57,27 @@ const options = yargs
     type: 'boolean',
     demandOption: false,
   })
+  .option('p', {
+    alias: 'pin-message',
+    describe: 'Unpin message from chat',
+    type: 'boolean',
+    default: false,
+    demandOption: false,
+  })
+  .option('t', {
+    alias: 'add-timestamp',
+    describe: 'Add timestamp to message',
+    type: 'boolean',
+    default: false,
+    demandOption: false,
+  })
+  .option('u', {
+    alias: 'unpin-previous',
+    describe: 'Pin message to chat',
+    type: 'boolean',
+    default: false,
+    demandOption: false,
+  })
   .option('d', {
     alias: 'debug',
     describe: 'Debug level of logging',
@@ -458,16 +479,33 @@ getEcoFlowCredentials()
                                     logDebug(`Ecoflow AC input frequency: ${inputFrequency} Hz`);
                                     if (currentInputState !== inputACConnectionState) {
                                       cache.setItem('inputACConnectionState', currentInputState);
-                                      const message = i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off');
+                                      const message = i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off'),
+                                        timeStamp = new Date().toLocaleString(options.language, {timeStyle: 'short', dateStyle: 'short'});
                                       logInfo(message);
                                       const telegramMessage = {
-                                        message: message,
+                                        message: `${options.addTimestamp ? timeStamp + ': ' : ''}${message}`,
                                       };
                                       if (topicId > 0) {
                                         telegramMessage.replyTo = topicId;
                                       }
-                                      telegramClient.sendMessage(targetEntity, telegramMessage).then(() => {
+                                      telegramClient.sendMessage(targetEntity, telegramMessage).then((message) => {
                                         logDebug(`Telegram message sent to ${chatId} with topic ${topicId}`);
+                                        if (options.pinMessage) {
+                                          telegramClient.pinMessage(targetEntity, message.id).then(() => {
+                                            logDebug(`Telegram message pinned to ${chatId} with topic ${topicId}`);
+                                            if (options.unpinPrevious) {
+                                              const previousMessageId = cache.getItem('lastMessageId');
+                                              if (previousMessageId !== undefined) {
+                                                telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
+                                                  logDebug(`Telegram message unpinned from ${chatId} with topic ${topicId}`);
+                                                });
+                                              }
+                                            }
+                                            cache.setItem('lastMessageId', message.id);
+                                          }).catch((error) => {
+                                            logError(`Telegram message pin error: ${error}`);
+                                          });
+                                        }
                                       }).catch((error) => {
                                         logError(`Telegram message error: ${error}`);
                                       });
