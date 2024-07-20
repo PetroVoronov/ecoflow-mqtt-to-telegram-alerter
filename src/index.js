@@ -14,7 +14,6 @@ const i18n = require('./modules/i18n/i18n.config');
 const axios = require('axios');
 const {v4: uuidv4} = require('uuid');
 const mqtt = require('mqtt');
-const {get} = require('node:http');
 
 const storage = new LocalStorage('data/storage'),
   cache = new Cache({
@@ -501,11 +500,11 @@ getEcoFlowCredentials()
                                                 });
                                               }
                                             }
-                                            cache.setItem('lastMessageId', message.id);
                                           }).catch((error) => {
                                             logError(`Telegram message pin error: ${error}`);
                                           });
                                         }
+                                        cache.setItem('lastMessageId', message.id);
                                       }).catch((error) => {
                                         logError(`Telegram message error: ${error}`);
                                       });
