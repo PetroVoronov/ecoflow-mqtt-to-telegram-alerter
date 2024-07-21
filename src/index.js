@@ -63,6 +63,13 @@ const options = yargs
     default: false,
     demandOption: false,
   })
+  .option('u', {
+    alias: 'unpin-previous',
+    describe: 'Pin message to chat',
+    type: 'boolean',
+    default: false,
+    demandOption: false,
+  })
   .option('t', {
     alias: 'add-timestamp',
     describe: 'Add timestamp to message',
@@ -70,11 +77,11 @@ const options = yargs
     default: false,
     demandOption: false,
   })
-  .option('u', {
-    alias: 'unpin-previous',
-    describe: 'Pin message to chat',
-    type: 'boolean',
-    default: false,
+  .option('tz', {
+    alias: 'time-zone',
+    describe: 'Time zone for timestamp',
+    type: 'string',
+    default: process.env.TZ || '',
     demandOption: false,
   })
   .option('d', {
@@ -479,11 +486,15 @@ getEcoFlowCredentials()
                                     if (currentInputState !== inputACConnectionState) {
                                       cache.setItem('inputACConnectionState', currentInputState);
                                       const message = i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off'),
-                                        timeStamp = new Date().toLocaleString(options.language, {timeStyle: 'short', dateStyle: 'short'});
+                                        timeStampOptions = {timeStyle: 'short', dateStyle: 'short'};
+                                      if (options.timeZone) {
+                                        timeStampOptions.timeZone = options.timeZone;
+                                      }
                                       logInfo(message);
-                                      const telegramMessage = {
-                                        message: `${options.addTimestamp ? timeStamp + ': ' : ''}${message}`,
-                                      };
+                                      const timeStamp = new Date().toLocaleString(options.language, timeStampOptions),
+                                        telegramMessage = {
+                                          message: `${options.addTimestamp ? timeStamp + ': ' : ''}${message}`,
+                                        };
                                       if (topicId > 0) {
                                         telegramMessage.replyTo = topicId;
                                       }
