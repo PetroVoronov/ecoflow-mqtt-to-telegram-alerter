@@ -1,4 +1,5 @@
 /** @module logging **/
+const strftime = require('strftime');
 
 const logLevelDebug = 0,
   logLevelInfo = 1,
@@ -16,12 +17,21 @@ function setLogLevel(level) {
 }
 
 /**
+ * To show the prefix of the logs
+ * @param {string} level - The log level
+ * @returns {string} - The prefix of the log
+ **/
+function logPrefix(level) {
+  return `[${strftime('%Y-%m-%dT%H:%M:%S.%L')}] [${level}] - `;
+}
+
+/**
  * Log debug messages
  * @param {string} message - The message to log
  */
 function logDebug(message) {
   if (logLevel <= logLevelDebug) {
-    console.log(message);
+    console.log(`${logPrefix('DBG ')}${message}`);
   }
 }
 
@@ -31,7 +41,7 @@ function logDebug(message) {
  */
 function logInfo(message) {
   if (logLevel <= logLevelInfo) {
-    console.log(message);
+    console.log(`${logPrefix('INFO')}${message}`);
   }
 }
 
@@ -41,7 +51,7 @@ function logInfo(message) {
  */
 function logWarning(message) {
   if (logLevel <= logLevelWarning) {
-    console.warn(message);
+    console.warn(`${logPrefix('WARN')}${message}`);
   }
 }
 
@@ -51,7 +61,7 @@ function logWarning(message) {
  */
 function logError(message) {
   if (logLevel <= logLevelError) {
-    console.error(message);
+    console.error(`${logPrefix('ERR ')}${message}`);
   }
 }
 
