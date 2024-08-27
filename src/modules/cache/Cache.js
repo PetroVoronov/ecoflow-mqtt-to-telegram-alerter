@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/public-static-readonly */
 /** @module cache/cached-items **/
 
 const stringify = require('json-stringify-safe');
@@ -53,6 +54,7 @@ class Cache {
         result = this.#getItem(key);
         try {
           result = JSON.parse(result);
+        // eslint-disable-next-line sonarjs/no-ignored-exceptions
         } catch (e) {
           logDebug(`Cache| Error parsing item from storage: key: ${key}, value: ${result}`);
         }

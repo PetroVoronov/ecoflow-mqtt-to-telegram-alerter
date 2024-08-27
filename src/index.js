@@ -135,12 +135,14 @@ function getEcoFlowCredentials() {
                 ecoflowPassword = password;
                 cache.setItem('ecoflowPassword', password);
                 rl.question('Enter your EcoFlow device SN: ')
+                  // eslint-disable-next-line sonarjs/no-nested-functions
                   .then((deviceSN) => {
                     ecoflowDeviceSN = deviceSN;
                     cache.setItem('ecoflowDeviceSN', deviceSN);
                     rl.close();
                     resolve();
                   })
+                  // eslint-disable-next-line sonarjs/no-nested-functions
                   .catch((error) => {
                     logError(`Error: ${error}`);
                     rl.close();
@@ -328,6 +330,7 @@ function getTelegramTargetEntity() {
               )
               .then((response) => {
                 if (Array.isArray(response.topics) && response.topics.length > 0) {
+                  // eslint-disable-next-line sonarjs/no-nested-functions
                   if (response.topics.find((topic) => topic.id === topicId) === undefined) {
                     logWarning(`Topic with id ${topicId} not found in ${targetDialog.title} (${chatId})!`);
                     reject(new Error(`Topic with id ${topicId} not found in ${targetDialog.title} (${chatId})!`));
@@ -382,6 +385,7 @@ function gracefulExit() {
 }
 
 function getRandomId() {
+  // eslint-disable-next-line sonarjs/pseudo-random
   return BigInt(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
 }
 
@@ -424,9 +428,10 @@ getEcoFlowCredentials()
                 };
                 ecoflowAPI
                   .get(`${ecoflowAPICertificationPath}?userId=${userId}`, {headers: headers})
+                  // eslint-disable-next-line sonarjs/no-nested-functions
                   .then((response) => {
                     logInfo('Ecoflow certification is successful. Getting MQTT client ...');
-                    let mqttUrl, mqttPort, mqttUsername, mqttPassword, mqttClientId;
+                    let mqttUrl, mqttPort, mqttProtocol, mqttUsername, mqttPassword, mqttClientId;
                     try {
                       mqttUrl = response.data.data.url;
                       mqttPort = parseInt(response.data.data.port, 10); // Ensure port is an integer
@@ -469,7 +474,7 @@ getEcoFlowCredentials()
                                 logInfo('Telegram target entity is found. Subscribing to topic ...');
                                 targetEntity = entity;
                                 mqttClient.on('message', (topic, message) => {
-                                  data = JSON.parse(message.toString());
+                                  const data = JSON.parse(message.toString());
                                   if (
                                     typeof data.params?.[ecoFlowACInputVoltage] === 'number' &&
                                     typeof data.params?.[ecoFlowACInputFrequency] === 'number' &&
@@ -545,6 +550,7 @@ getEcoFlowCredentials()
                         gracefulExit();
                       });
                   })
+                  // eslint-disable-next-line sonarjs/no-nested-functions
                   .catch((error) => {
                     logError(`Ecoflow certification error: ${error}`);
                     gracefulExit();

@@ -1,6 +1,6 @@
 {
   "name": "ecoflow-mqtt-to-telegram-alerter",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "description": "A Telegram \"alerter\" working as user or bot, using MTProto via [gramjs](https://github.com/gram-js/gramjs), to raise alert messages from appropriate EcoFlow device.",
   "main": "src/index.js",
   "keywords": [
@@ -33,8 +33,6 @@
   "devDependencies": {
     "@babel/core": "^7.24.9",
     "@babel/eslint-parser": "^7.25.1",
-    "@eslint/js": "^9.9.1",
-    "eslint": "^9.9.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-sonarjs": "^2.0.1",
     "genversion": "^3.2.0",
