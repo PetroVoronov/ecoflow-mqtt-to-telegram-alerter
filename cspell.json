@@ -11,7 +11,9 @@
         "genversion",
         "gramjs",
         "localstorage",
+        "mqtt",
         "MTProto",
+        "preversion",
         "sonarjs",
         "uuidv",
         "Voronov"

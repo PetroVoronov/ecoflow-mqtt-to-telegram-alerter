@@ -56,6 +56,19 @@ const options = yargs
     type: 'boolean',
     demandOption: false,
   })
+  .option('k', {
+    alias: 'keep-alive',
+    describe: 'Check if is mqtt client is alive every X seconds',
+    type: 'number',
+    default: 60,
+    demandOption: false,
+  })
+  .option('log-alive-interval', {
+    describe: 'Check if is mqtt client is alive every Y minutes',
+    type: 'number',
+    default: 0,
+    demandOption: false,
+  })
   .option('p', {
     alias: 'pin-message',
     describe: 'Unpin message from chat',
@@ -108,7 +121,9 @@ const ecoflowAPIURL = 'https://api.ecoflow.com',
   ecoflowAPI = axios.create({
     baseURL: ecoflowAPIURL,
     timeout: 10000,
-  });
+  }),
+  ecoflowMQTTKeepAliveInterval = options.keepAlive * 1000,
+  ecoflowMQTTLogAliveInterval = options.logAliveInterval * 60 * 1000;
 
 const ecoFlowACInput = 'inv.acIn',
   ecoFlowACInputVoltage = `${ecoFlowACInput}Vol`,
@@ -116,7 +131,10 @@ const ecoFlowACInput = 'inv.acIn',
   ecoFlowACInputCurrent = `${ecoFlowACInput}Amp`;
 
 let mqttClient = null,
-  telegramClient = null;
+  mqttOptions = null,
+  ecoflowTopic = '/app/device/property/',
+  telegramClient = null,
+  lastMQTTMessageTimeStamp = new Date().getTime();
 
 function getEcoFlowCredentials() {
   return new Promise((resolve, reject) => {
@@ -388,9 +406,102 @@ function getRandomId() {
   // eslint-disable-next-line sonarjs/pseudo-random
   return BigInt(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
 }
+function mqttSubscribe() {
+  mqttClient.subscribe(ecoflowTopic, (error) => {
+    if (error) {
+      logError(`Ecoflow MQTT subscription error: ${error}`);
+      gracefulExit();
+    } else {
+      logInfo(`Ecoflow MQTT subscription is successful. Listening to messages ...`);
+      mqttKeepAliveInit();
+    }
+  });
+}
+
+function mqttMessageHandler(topic, message) {
+  const data = JSON.parse(message.toString());
+  if (
+    typeof data.params?.[ecoFlowACInputVoltage] === 'number' &&
+    typeof data.params?.[ecoFlowACInputFrequency] === 'number' &&
+    typeof data.params?.[ecoFlowACInputCurrent] === 'number'
+  ) {
+    lastMQTTMessageTimeStamp = new Date().getTime();
+    const inputVoltage = data.params[ecoFlowACInputVoltage] / 1000,
+      inputCurrent = data.params[ecoFlowACInputCurrent] / 1000,
+      inputFrequency = data.params[ecoFlowACInputFrequency],
+      currentInputState = inputVoltage > 0 && inputCurrent > 0 && inputFrequency > 0;
+    let inputACConnectionState = cache.getItem('inputACConnectionState');
+    logDebug(`Ecoflow AC input voltage: ${inputVoltage} V`);
+    logDebug(`Ecoflow AC input current: ${inputCurrent} A`);
+    logDebug(`Ecoflow AC input frequency: ${inputFrequency} Hz`);
+    if (currentInputState !== inputACConnectionState) {
+      cache.setItem('inputACConnectionState', currentInputState);
+      const message = i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off'),
+        timeStampOptions = {timeStyle: 'short', dateStyle: 'short'};
+      if (options.timeZone) {
+        timeStampOptions.timeZone = options.timeZone;
+      }
+      logInfo(message);
+      const timeStamp = new Date().toLocaleString(options.language, timeStampOptions),
+        telegramMessage = {
+          message: `${options.addTimestamp ? timeStamp + ': ' : ''}${message}`,
+        };
+      if (topicId > 0) {
+        telegramMessage.replyTo = topicId;
+      }
+      telegramClient.sendMessage(targetEntity, telegramMessage).then((message) => {
+        logDebug(`Telegram message sent to ${chatId} with topic ${topicId}`);
+        if (options.pinMessage) {
+          telegramClient.pinMessage(targetEntity, message.id).then(() => {
+            logDebug(`Telegram message pinned to ${chatId} with topic ${topicId}`);
+            if (options.unpinPrevious) {
+              const previousMessageId = cache.getItem('lastMessageId');
+              if (previousMessageId !== undefined) {
+                telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
+                  logDebug(`Telegram message unpinned from ${chatId} with topic ${topicId}`);
+                });
+              }
+            }
+          }).catch((error) => {
+            logError(`Telegram message pin error: ${error}`);
+          });
+        }
+        cache.setItem('lastMessageId', message.id);
+      }).catch((error) => {
+        logError(`Telegram message error: ${error}`);
+      });
+    }
+  }
+}
+
+function mqttKeepAliveCheck() {
+  const currentTimeStamp = new Date().getTime();
+  if (currentTimeStamp - lastMQTTMessageTimeStamp > ecoflowMQTTKeepAliveInterval) {
+    logWarning(`Ecoflow MQTT client is not alive for ${options.keepAlive} seconds!`);
+    mqttClient.reconnect()
+  } else {
+    logDebug(`Ecoflow MQTT client is alive!`);
+  }
+}
+
+function mqttKeepAliveInit() {
+  if (mqttClient !== null) {
+    if (options.keepAlive > 0) {
+      lastMQTTMessageTimeStamp = new Date().getTime();
+      setInterval(mqttKeepAliveCheck, ecoflowMQTTKeepAliveInterval);
+    }
+    if (options.logAliveInterval > 0) {
+      setInterval(() => {
+        logInfo(`Ecoflow MQTT client is alive!`);
+      }, ecoflowMQTTLogAliveInterval);
+    }
+  }
+}
+
 
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
+
 
 getEcoFlowCredentials()
   .then(() => {
@@ -450,20 +561,41 @@ getEcoFlowCredentials()
                     logDebug(`Ecoflow MQTT password: ${mqttPassword}`);
                     logDebug(`Ecoflow MQTT client ID: ${mqttClientId}`);
                     const connectMQTTUrl = `${mqttProtocol}://${mqttUrl}:${mqttPort}`;
+                    mqttOptions = {
+                      clientId: mqttClientId,
+                      clean: true,
+                      connectTimeout: 4000,
+                      username: mqttUsername,
+                      password: mqttPassword,
+                      reconnectPeriod: 1000,
+                      protocol: mqttProtocol,
+                    };
+                    ecoflowTopic += ecoflowDeviceSN;
 
                     mqtt
-                      .connectAsync(connectMQTTUrl, {
-                        clientId: mqttClientId,
-                        clean: true,
-                        connectTimeout: 4000,
-                        username: mqttUsername,
-                        password: mqttPassword,
-                        reconnectPeriod: 1000,
-                        protocol: mqttProtocol,
-                      })
+                      .connectAsync(connectMQTTUrl, mqttOptions)
                       .then((client) => {
                         mqttClient = client;
                         logInfo('Ecoflow MQTT broker is connected. Getting Telegram client ...');
+                        mqttClient.on('error', (error) => {
+                          logError(`Ecoflow MQTT broker error: ${error}`);
+                          gracefulExit();
+                        });
+                        mqttClient.on('connect', () => {
+                          logInfo('Ecoflow MQTT broker is connected ...');
+                        });
+                        mqttClient.on('reconnect', () => {
+                          logInfo('Ecoflow MQTT broker is reconnecting ...');
+                        });
+                        mqttClient.on('close', () => {
+                          logInfo('Ecoflow MQTT broker is closed ...');
+                        });
+                        mqttClient.on('offline', () => {
+                          logInfo('Ecoflow MQTT broker is offline ...');
+                        });
+                        mqttClient.on('end', () => {
+                          logInfo('Ecoflow MQTT broker is ended ...');
+                        });
                         getTelegramClient()
                           .then((client) => {
                             logInfo('Telegram client is connected. Getting target entity ...');
@@ -473,67 +605,8 @@ getEcoFlowCredentials()
                               .then((entity) => {
                                 logInfo('Telegram target entity is found. Subscribing to topic ...');
                                 targetEntity = entity;
-                                mqttClient.on('message', (topic, message) => {
-                                  const data = JSON.parse(message.toString());
-                                  if (
-                                    typeof data.params?.[ecoFlowACInputVoltage] === 'number' &&
-                                    typeof data.params?.[ecoFlowACInputFrequency] === 'number' &&
-                                    typeof data.params?.[ecoFlowACInputCurrent] === 'number'
-                                  ) {
-                                    const inputVoltage = data.params[ecoFlowACInputVoltage] / 1000,
-                                      inputCurrent = data.params[ecoFlowACInputCurrent] / 1000,
-                                      inputFrequency = data.params[ecoFlowACInputFrequency],
-                                      currentInputState = inputVoltage > 0 && inputCurrent > 0 && inputFrequency > 0;
-                                    let inputACConnectionState = cache.getItem('inputACConnectionState');
-                                    logDebug(`Ecoflow AC input voltage: ${inputVoltage} V`);
-                                    logDebug(`Ecoflow AC input current: ${inputCurrent} A`);
-                                    logDebug(`Ecoflow AC input frequency: ${inputFrequency} Hz`);
-                                    if (currentInputState !== inputACConnectionState) {
-                                      cache.setItem('inputACConnectionState', currentInputState);
-                                      const message = i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off'),
-                                        timeStampOptions = {timeStyle: 'short', dateStyle: 'short'};
-                                      if (options.timeZone) {
-                                        timeStampOptions.timeZone = options.timeZone;
-                                      }
-                                      logInfo(message);
-                                      const timeStamp = new Date().toLocaleString(options.language, timeStampOptions),
-                                        telegramMessage = {
-                                          message: `${options.addTimestamp ? timeStamp + ': ' : ''}${message}`,
-                                        };
-                                      if (topicId > 0) {
-                                        telegramMessage.replyTo = topicId;
-                                      }
-                                      telegramClient.sendMessage(targetEntity, telegramMessage).then((message) => {
-                                        logDebug(`Telegram message sent to ${chatId} with topic ${topicId}`);
-                                        if (options.pinMessage) {
-                                          telegramClient.pinMessage(targetEntity, message.id).then(() => {
-                                            logDebug(`Telegram message pinned to ${chatId} with topic ${topicId}`);
-                                            if (options.unpinPrevious) {
-                                              const previousMessageId = cache.getItem('lastMessageId');
-                                              if (previousMessageId !== undefined) {
-                                                telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
-                                                  logDebug(`Telegram message unpinned from ${chatId} with topic ${topicId}`);
-                                                });
-                                              }
-                                            }
-                                          }).catch((error) => {
-                                            logError(`Telegram message pin error: ${error}`);
-                                          });
-                                        }
-                                        cache.setItem('lastMessageId', message.id);
-                                      }).catch((error) => {
-                                        logError(`Telegram message error: ${error}`);
-                                      });
-                                    }
-                                  }
-                                });
-                                mqttClient.subscribe(`/app/device/property/${ecoflowDeviceSN}`, (error) => {
-                                  if (error) {
-                                    logError(`Ecoflow MQTT subscription error: ${error}`);
-                                  } else {
-                                    logInfo(`Ecoflow MQTT subscription is successful. Listening to messages ...`);
-                                  }
-                                });
+                                mqttClient.on('message', mqttMessageHandler);
+                                mqttSubscribe();
                               })
                               .catch((error) => {
                                 logError(`Telegram target peer error: ${error}`);
