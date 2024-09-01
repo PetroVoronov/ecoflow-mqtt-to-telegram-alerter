@@ -134,7 +134,8 @@ let mqttClient = null,
   mqttOptions = null,
   ecoflowTopic = '/app/device/property/',
   telegramClient = null,
-  lastMQTTMessageTimeStamp = new Date().getTime();
+  lastMQTTMessageTimeStamp = new Date().getTime(),
+  lastAliveInfoMessageTimeStamp = new Date().getTime();
 
 function getEcoFlowCredentials() {
   return new Promise((resolve, reject) => {
@@ -479,6 +480,9 @@ function mqttKeepAliveCheck() {
   if (currentTimeStamp - lastMQTTMessageTimeStamp > ecoflowMQTTKeepAliveInterval) {
     logWarning(`Ecoflow MQTT client is not alive for ${options.keepAlive} seconds!`);
     mqttClient.reconnect()
+  } else if (options.logAliveInterval > 0 && currentTimeStamp - lastAliveInfoMessageTimeStamp > ecoflowMQTTLogAliveInterval) {
+      lastAliveInfoMessageTimeStamp = currentTimeStamp;
+      logInfo(`Ecoflow MQTT client is alive!`);
   } else {
     logDebug(`Ecoflow MQTT client is alive!`);
   }
