@@ -1,5 +1,5 @@
 const {Api, TelegramClient} = require('telegram');
-const {StringSession, StoreSession} = require('telegram/sessions');
+const {StoreSession} = require('telegram/sessions');
 const readline = require('node:readline/promises');
 const {stdin: input, stdout: output, exit} = require('node:process');
 const stringify = require('json-stringify-safe');
@@ -7,13 +7,12 @@ const {LocalStorage} = require('node-localstorage');
 const yargs = require('yargs');
 const {Cache} = require('./modules/cache/Cache');
 const {logLevelInfo, logLevelDebug, setLogLevel, logDebug, logInfo, logWarning, logError} = require('./modules/logging/logging');
-const {NewMessage, NewMessageEvent} = require('telegram/events');
-const {CallbackQuery, CallbackQueryEvent} = require('telegram/events/CallbackQuery');
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
 const axios = require('axios');
 const {v4: uuidv4} = require('uuid');
 const mqtt = require('mqtt');
+const { log } = require('node:console');
 
 const storage = new LocalStorage('data/storage'),
   cache = new Cache({
@@ -28,7 +27,7 @@ let ecoflowUserName = process.env.ECOFLOW_USERNAME || cache.getItem('ecoflowUser
   apiId = parseInt(process.env.TELEGRAM_API_ID) || cache.getItem('telegramApiId', 'number'),
   apiHash = process.env.TELEGRAM_API_HASH || cache.getItem('telegramApiHash'),
   botAuthToken = process.env.TELEGRAM_BOT_AUTH_TOKEN || cache.getItem('telegramBotAuthToken'),
-  chatId = process.env.TELEGRAM_CHAT_ID || cache.getItem('telegramChatId'),
+  chatId = parseInt(process.env.TELEGRAM_CHAT_ID) || cache.getItem('telegramChatId', 'number'),
   topicId = parseInt(process.env.TELEGRAM_TOPIC_ID) || cache.getItem('telegramTopicId', 'number'),
   targetEntity;
 
@@ -63,8 +62,8 @@ const options = yargs
     default: 60,
     demandOption: false,
   })
-  .option('log-alive-interval', {
-    describe: 'Check if is mqtt client is alive every Y minutes',
+  .option('log-alive-status-interval', {
+    describe: 'Log the mqtt client alive status every Y minutes',
     type: 'number',
     default: 0,
     demandOption: false,
@@ -188,12 +187,15 @@ function getEcoFlowCredentials() {
 
 function getAPIAttributes() {
   return new Promise((resolve, reject) => {
-    if ((options.asBot === false && (apiId === null || apiHash === null)) || (botAuthToken === null && options.asBot === true)) {
+    if (
+      (options.asBot === false && (apiId === null || apiHash === null)) ||
+      (options.asBot === true && (botAuthToken === null || botAuthToken.length < 43))
+    ) {
       const rl = readline.createInterface({
         input,
         output,
       });
-      if (options.asBot === false && (apiId === null || apiHash === null)) {
+      if (options.asBot === false) {
         rl.question('Enter your API ID: ')
           .then((id) => {
             apiId = parseInt(id);
@@ -218,6 +220,7 @@ function getAPIAttributes() {
       } else {
         rl.question('Enter your Bot Auth Token: ')
           .then((token) => {
+            botAuthToken = token;
             cache.setItem('telegramBotAuthToken', botAuthToken);
             rl.close();
             resolve();
@@ -330,50 +333,87 @@ function getTelegramClient() {
 
 function getTelegramTargetEntity() {
   return new Promise((resolve, reject) => {
-    telegramClient
-      .getDialogs()
-      .then((dialogs) => {
-        const availableDialogs = dialogs.filter((dialog) => dialog.entity?.migratedTo === undefined || dialog.entity?.migratedTo === null),
-          targetDialog = availableDialogs.find((item) => `${chatId}` === `${item.entity.id}`);
-        if (targetDialog !== undefined) {
-          if (topicId > 0) {
-            telegramClient
-              .invoke(
-                new Api.channels.GetForumTopics({
-                  channel: targetDialog.entity,
-                  limit: 100,
-                  offsetId: 0,
-                  offsetDate: 0,
-                  addOffset: 0,
-                }),
-              )
-              .then((response) => {
-                if (Array.isArray(response.topics) && response.topics.length > 0) {
-                  // eslint-disable-next-line sonarjs/no-nested-functions
-                  if (response.topics.find((topic) => topic.id === topicId) === undefined) {
-                    logWarning(`Topic with id ${topicId} not found in ${targetDialog.title} (${chatId})!`);
-                    reject(new Error(`Topic with id ${topicId} not found in ${targetDialog.title} (${chatId})!`));
-                  } else {
-                    resolve(targetDialog.entity);
-                  }
-                } else {
-                  logWarning(`No topics found in ${targetDialog.title} (${chatId})!`);
-                  reject(new Error(`No topics found in ${targetDialog.title} (${chatId})!`));
-                }
-              })
-              .catch((error) => {
-                reject(error);
-              });
-          } else {
-            resolve(targetDialog.entity);
-          }
+    if (chatId > 0 && topicId === 0) {
+      telegramClient.invoke(new Api.users.GetUsers({ id: [chatId] })).then((result) => {
+        if (result.length > 0) {
+          const entity = result[0];
+          logDebug(`Telegram user ${entity.firstName} ${entity.lastName} '${entity.username}' (${chatId}) found!`);
+          resolve(entity);
         } else {
-          reject(new Error(`Telegram chat with ID ${chatId} not found`));
+          throw(new Error(`Telegram user with ID ${chatId} not found!`));
         }
-      })
-      .catch((error) => {
+      }).catch((error) => {
+        logWarning(`Telegram chat with ID ${chatId} not found! Error: ${error}`);
         reject(error);
       });
+    } else if (chatId < 0 && chatId > -1000000000000 && topicId === 0) {
+      telegramClient.invoke(new Api.messages.GetChats({ id: [-chatId] })).then((result) => {
+        if (result.chats.length > 0) {
+          const entity = result.chats[0];
+          logDebug(`Telegram chat/group ${entity.title} (${chatId}) found!`);
+          resolve(entity);
+        } else {
+          throw(new Error(`Telegram chat/group with ID ${chatId} not found!`));
+        }
+      }).catch((error) => {
+        logWarning(`Telegram chat/group with ID ${chatId} not found! Error: ${error}`);
+        reject(error);
+      });
+    } else if (chatId < -1000000000000) {
+      telegramClient.invoke(new Api.channels.GetChannels({ id: [chatId] })).then((result) => {
+        if (result.chats.length > 0) {
+          const entity = result.chats[0];
+          if (topicId === 0) {
+            logDebug(`Telegram forum/channel ${entity.title} (${chatId}) found!`);
+            resolve(entity);
+          } else if (topicId > 0 && (entity.megagroup === true || entity.forum === true)) {
+            if (telegramClient.isBot) {
+              logWarning(`Telegram bot can't check if forum/channel topics is exists!`);
+              resolve(entity);
+            } else {
+              telegramClient
+                .invoke(
+                  new Api.channels.GetForumTopics({
+                    channel: entity,
+                    limit: 100,
+                    offsetId: 0,
+                    offsetDate: 0,
+                    addOffset: 0,
+                  }),
+                )
+                .then((response) => {
+                  if (Array.isArray(response.topics) && response.topics.length > 0) {
+                    // eslint-disable-next-line sonarjs/no-nested-functions
+                    const topic = response.topics.find((topic) => topic.id === topicId);
+                    if (topic === undefined) {
+                      throw(new Error(`Topic with id ${topicId} not found in ${entity.title} (${chatId})!`));
+                    } else {
+                      logDebug(`Telegram forum/channel ${entity.title} (${chatId})  with topic ${topic.title} (${topicId}) found!`);
+                      resolve(entity);
+                    }
+                  } else {
+                    throw(new Error(`No topics found in ${entity.title} (${chatId})!`));
+                  }
+                })
+                .catch((error) => {
+                  reject(error);
+                });
+            }
+          } else {
+            throw(new Error(`Telegram forum/channel with ID ${chatId} is not a forum/channel!`));
+          }
+        } else {
+          throw(new Error(`Telegram forum/channel with ID ${chatId} not found!`));
+        }
+      }).catch((error) => {
+        logWarning(`Telegram forum/channel with ID ${chatId} not found! Error: ${error}`);
+        reject(error);
+      });
+    } else {
+      const errorMessage = `Telegram chat with ID ${chatId} not found!`;
+      logWarning(errorMessage);
+      reject(new Error(errorMessage));
+    }
   });
 }
 
@@ -450,27 +490,33 @@ function mqttMessageHandler(topic, message) {
       if (topicId > 0) {
         telegramMessage.replyTo = topicId;
       }
-      telegramClient.sendMessage(targetEntity, telegramMessage).then((message) => {
-        logDebug(`Telegram message sent to ${chatId} with topic ${topicId}`);
-        if (options.pinMessage) {
-          telegramClient.pinMessage(targetEntity, message.id).then(() => {
-            logDebug(`Telegram message pinned to ${chatId} with topic ${topicId}`);
-            if (options.unpinPrevious) {
-              const previousMessageId = cache.getItem('lastMessageId');
-              if (previousMessageId !== undefined) {
-                telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
-                  logDebug(`Telegram message unpinned from ${chatId} with topic ${topicId}`);
-                });
-              }
-            }
-          }).catch((error) => {
-            logError(`Telegram message pin error: ${error}`);
-          });
-        }
-        cache.setItem('lastMessageId', message.id);
-      }).catch((error) => {
-        logError(`Telegram message error: ${error}`);
-      });
+      telegramClient
+        .sendMessage(targetEntity, telegramMessage)
+        .then((message) => {
+          logDebug(`Telegram message sent to ${chatId} with topic ${topicId}`);
+          if (options.pinMessage) {
+            telegramClient
+              .pinMessage(targetEntity, message.id)
+              .then(() => {
+                logDebug(`Telegram message pinned to ${chatId} with topic ${topicId}`);
+                if (options.unpinPrevious) {
+                  const previousMessageId = cache.getItem('lastMessageId');
+                  if (previousMessageId !== undefined) {
+                    telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
+                      logDebug(`Telegram message unpinned from ${chatId} with topic ${topicId}`);
+                    });
+                  }
+                }
+              })
+              .catch((error) => {
+                logError(`Telegram message pin error: ${error}`);
+              });
+          }
+          cache.setItem('lastMessageId', message.id);
+        })
+        .catch((error) => {
+          logError(`Telegram message error: ${error}`);
+        });
     }
   }
 }
@@ -479,10 +525,10 @@ function mqttKeepAliveCheck() {
   const currentTimeStamp = new Date().getTime();
   if (currentTimeStamp - lastMQTTMessageTimeStamp > ecoflowMQTTKeepAliveInterval) {
     logWarning(`Ecoflow MQTT client is not alive for ${options.keepAlive} seconds!`);
-    mqttClient.reconnect()
+    mqttClient.reconnect();
   } else if (options.logAliveInterval > 0 && currentTimeStamp - lastAliveInfoMessageTimeStamp > ecoflowMQTTLogAliveInterval) {
-      lastAliveInfoMessageTimeStamp = currentTimeStamp;
-      logInfo(`Ecoflow MQTT client is alive!`);
+    lastAliveInfoMessageTimeStamp = currentTimeStamp;
+    logInfo(`Ecoflow MQTT client is alive!`);
   } else {
     logDebug(`Ecoflow MQTT client is alive!`);
   }
@@ -502,10 +548,8 @@ function mqttKeepAliveInit() {
   }
 }
 
-
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
-
 
 getEcoFlowCredentials()
   .then(() => {

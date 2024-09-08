@@ -11,6 +11,7 @@
         "genversion",
         "gramjs",
         "localstorage",
+        "megagroup",
         "mqtt",
         "MTProto",
         "preversion",
