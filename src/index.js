@@ -367,7 +367,7 @@ function getTelegramTargetEntity() {
             logDebug(`Telegram forum/channel ${entity.title} (${chatId}) found!`);
             resolve(entity);
           } else if (topicId > 0 && (entity.megagroup === true || entity.forum === true)) {
-            if (telegramClient.isBot) {
+            if (options.asBot === true) {
               logWarning(`Telegram bot can't check if forum/channel topics is exists!`);
               resolve(entity);
             } else {
@@ -651,7 +651,7 @@ getEcoFlowCredentials()
                             telegramClient.setParseMode('html');
                             getTelegramTargetEntity()
                               .then((entity) => {
-                                logInfo('Telegram target entity is found. Subscribing to topic ...');
+                                logInfo('Telegram target entity is found. Subscribing to MQTT topic ...');
                                 targetEntity = entity;
                                 mqttClient.on('message', mqttMessageHandler);
                                 mqttSubscribe();
