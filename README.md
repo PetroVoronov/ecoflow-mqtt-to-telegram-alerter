@@ -1,7 +1,13 @@
 # Ecoflow MQTT to Telegram Alerter
 
-![Docker Image Version](https://img.shields.io/docker/v/petrovoronov/ecoflow-mqtt-to-telegram-alerter)
-![GitHub license](https://img.shields.io/github/license/PetroVoronov/ecoflow-mqtt-to-telegram-alerter)
+[![Docker Image Version](https://img.shields.io/docker/v/petrovoronov/ecoflow-mqtt-to-telegram-alerter)](https://hub.docker.com/r/petrovoronov/ecoflow-mqtt-to-telegram-alerter)
+[![Docker Pulls](https://img.shields.io/docker/pulls/petrovoronov/ecoflow-mqtt-to-telegram-alerter)](https://hub.docker.com/r/petrovoronov/ecoflow-mqtt-to-telegram-alerter)
+[![GitHub license](https://img.shields.io/github/license/PetroVoronov/ecoflow-mqtt-to-telegram-alerter)](LICENSE)
+[![GitHub last commit](https://img.shields.io/github/last-commit/PetroVoronov/ecoflow-mqtt-to-telegram-alerter)](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commits/main)
+[![GitHub issues](https://img.shields.io/github/issues/PetroVoronov/ecoflow-mqtt-to-telegram-alerter)](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/PetroVoronov/ecoflow-mqtt-to-telegram-alerter)](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/pulls)
+
+[![Ukrainian translation](https://img.shields.io/static/v1?label=Readme&message=Ukrainian&labelColor=1f5fb2&color=fad247)](README-uk.md)
 
 ## About
 
@@ -77,15 +83,17 @@ So you will be asked to enter the parameters only once (or you should pass it as
 
 The application can be configured using the following command-line options:
 
-- `-l, --language`: Language code for i18n (default: `en`)
-- `-b, --as-bot`: Start as bot instance
-- `-k, --keep-alive`: Check if the MQTT client is alive every X seconds (default: `60`)
-- `--log-alive-status-interval`: Log the MQTT client alive status every Y minutes (default: `0`)
-- `-p, --pin-message`: Unpin message from chat (default: `false`)
-- `-u, --unpin-previous`: Pin message to chat (default: `false`)
-- `-t, --add-timestamp`: Add timestamp to message (default: `false`)
-- `-tz, --time-zone`: Time zone for timestamp (default: value of `TZ` environment variable or empty string)
-- `-d, --debug`: Debug level of logging
+| Option                          | Alias | Description                                                                                     | Type    | Default                          | Required |
+|---------------------------------|-------|-------------------------------------------------------------------------------------------------|---------|----------------------------------|----------|
+| `-l, --language`                | `-l`  | Language code for i18n                                                                          | String  | `en`                             | No       |
+| `-b, --as-bot`                  | `-b`  | Start as bot instance                                                                           | Boolean |                                  | No       |
+| `-k, --keep-alive`              | `-k`  | Check if the MQTT client is alive every X seconds                                               | Number  | `60`                             | No       |
+| `--log-alive-status-interval`   |       | Log the MQTT client alive status every Y minutes                                                | Number  | `0`                              | No       |
+| `-p, --pin-message`             | `-p`  | Unpin message from chat                                                                         | Boolean | `false`                          | No       |
+| `-u, --unpin-previous`          | `-u`  | Pin message to chat                                                                             | Boolean | `false`                          | No       |
+| `-t, --add-timestamp`           | `-t`  | Add timestamp to message                                                                        | Boolean | `false`                          | No       |
+| `-tz, --time-zone`              | `-tz` | Time zone for timestamp                                                                         | String  | Value of `TZ` environment variable or empty string | No       |
+| `-d, --debug`                   | `-d`  | Debug level of logging                                                                          | String  |                                  | No       |
 
 ## Running the Application
 
@@ -202,6 +210,7 @@ services:
             - ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
             - TELEGRAM_API_ID=your_telegram_api_id
             - TELEGRAM_API_HASH=your_telegram_api_hash
+            - TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
         command: node src/index.js --as-bot
