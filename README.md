@@ -34,9 +34,11 @@ Post a message to that topic, then right-click on it and select Copy Message Lin
 ## Installation
 
 ### Docker image installation
-    ```sh
-    docker pull petrovoronov/ecoflow-mqtt-to-telegram-alerter
-    ```
+
+```sh
+docker pull petrovoronov/ecoflow-mqtt-to-telegram-alerter
+```
+
 ### Node.js installation from the source code
 
    1. Clone the repository:
@@ -51,25 +53,25 @@ Post a message to that topic, then right-click on it and select Copy Message Lin
         ```
 
 ## Passing the basic configuration parameters
+Basic configuration parameters, including Ecoflow and Telegram credentials can be passed as environment variables:
 
-    Basic configuration parameters, including Ecoflow and Telegram credentials can be passed as environment variables:
+```sh
+export ECOFLOW_USERNAME=your_ecoflow_username
+export ECOFLOW_PASSWORD=your_ecoflow_password
+export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
+export TELEGRAM_API_ID=your_telegram_api_id
+export TELEGRAM_API_HASH=your_telegram_api_hash
+export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
+export TELEGRAM_CHAT_ID=your_telegram_chat_id
+export TELEGRAM_TOPIC_ID=your_telegram_topic_id
+```
 
-    ```sh
-    export ECOFLOW_USERNAME=your_ecoflow_username
-    export ECOFLOW_PASSWORD=your_ecoflow_password
-    export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
-    export TELEGRAM_API_ID=your_telegram_api_id
-    export TELEGRAM_API_HASH=your_telegram_api_hash
-    export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
-    export TELEGRAM_CHAT_ID=your_telegram_chat_id
-    export TELEGRAM_TOPIC_ID=your_telegram_topic_id
-    ```
-    or you can skip it and application will ask you to enter it interactively.
+or you can skip it and application will ask you to enter it interactively.
 
-    After first run these parameters will be stored in the `data/storage` directory and will be used for the next runs.
-    So you will be asked to enter the parameters only once (or you should pass it as environment variables only on the first run).
+After first run these parameters will be stored in the `data/storage` directory and will be used for the next runs.
+So you will be asked to enter the parameters only once (or you should pass it as environment variables only on the first run).
 
-    **Important notice: if you want to change the parameters you should pass it again as environment variables at any time.**
+**Important notice: if you want to change the parameters you should pass it again as environment variables at any time.**
 
 ## Command-line Options
 
@@ -91,9 +93,9 @@ The application can be configured using the following command-line options:
 
 There is an example with all possible command-line options:
 
-    ```sh
-    node index.js --language en --as-bot --keep-alive 30 --log-alive-status-interval 5 --pin-message --unpin-previous --add-timestamp --time-zone "America/New_York" --debug
-    ```
+```sh
+node index.js --language en --as-bot --keep-alive 30 --log-alive-status-interval 5 --pin-message --unpin-previous --add-timestamp --time-zone "America/New_York" --debug
+```
 
 ### Docker
 
@@ -115,52 +117,52 @@ Additionally, you can map the localization directory to the container:
 So, the first run should be like one of the following:
 - to work as telegram user and set all basic configuration parameters interactively:
     ```sh
-        docker run -it --name ecoflow-mqtt-to-telegram-alerter \
-            -v /path/to/your/data:/app/data \
-            -v /path/to/your/locales:/app/locales \
-            petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
+    docker run -it --name ecoflow-mqtt-to-telegram-alerter \
+        -v /path/to/your/data:/app/data \
+        -v /path/to/your/locales:/app/locales \
+        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
     ```
 
 - to work as telegram user and set all basic configuration parameters as environment variables:
     ```sh
-        docker run -d --name ecoflow-mqtt-to-telegram-alerter \
-            -v /path/to/your/data:/app/data \
-            -v /path/to/your/locales:/app/locales \
-            -e ECOFLOW_USERNAME=your_ecoflow_username \
-            -e ECOFLOW_PASSWORD=your_ecoflow_password \
-            -e ECOFLOW_DEVICE_SN=your_ecoflow_device_sn \
-            -e TELEGRAM_API_ID=your_telegram_api_id \
-            -e TELEGRAM_API_HASH=your_telegram_api_hash \
-            -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
-            -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
-            petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
+    docker run -d --name ecoflow-mqtt-to-telegram-alerter \
+        -v /path/to/your/data:/app/data \
+        -v /path/to/your/locales:/app/locales \
+        -e ECOFLOW_USERNAME=your_ecoflow_username \
+        -e ECOFLOW_PASSWORD=your_ecoflow_password \
+        -e ECOFLOW_DEVICE_SN=your_ecoflow_device_sn \
+        -e TELEGRAM_API_ID=your_telegram_api_id \
+        -e TELEGRAM_API_HASH=your_telegram_api_hash \
+        -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
+        -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
+        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
     ```
 
 - to work as telegram bot and set all basic configuration parameters interactively:
     ```sh
-        docker run -it --name ecoflow-mqtt-to-telegram-alerter \
-            -v /path/to/your/data:/app/data \
-            -v /path/to/your/locales:/app/locales \
-            petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
-            node src/index.js --as-bot
+    docker run -it --name ecoflow-mqtt-to-telegram-alerter \
+        -v /path/to/your/data:/app/data \
+        -v /path/to/your/locales:/app/locales \
+        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
+        node src/index.js --as-bot
     ```
 
 
 - to work as telegram bot and  all basic configuration parameters as environment variables:
     ```sh
-        docker run -d --name ecoflow-mqtt-to-telegram-alerter \
-            -v /path/to/your/data:/app/data \
-            -v /path/to/your/locales:/app/locales \
-            -e ECOFLOW_USERNAME=your_ecoflow_username \
-            -e ECOFLOW_PASSWORD=your_ecoflow_password \
-            -e ECOFLOW_DEVICE_SN=your_ecoflow_device_sn \
-            -e TELEGRAM_API_ID=your_telegram_api_id \
-            -e TELEGRAM_API_HASH=your_telegram_api_hash \
-            -e TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token \
-            -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
-            -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
-            petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
-            node src/index.js --as-bot
+    docker run -d --name ecoflow-mqtt-to-telegram-alerter \
+        -v /path/to/your/data:/app/data \
+        -v /path/to/your/locales:/app/locales \
+        -e ECOFLOW_USERNAME=your_ecoflow_username \
+        -e ECOFLOW_PASSWORD=your_ecoflow_password \
+        -e ECOFLOW_DEVICE_SN=your_ecoflow_device_sn \
+        -e TELEGRAM_API_ID=your_telegram_api_id \
+        -e TELEGRAM_API_HASH=your_telegram_api_hash \
+        -e TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token \
+        -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
+        -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
+        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
+        node src/index.js --as-bot
     ```
 **Important notice: pass all later needed command-line options at first run!***
 
