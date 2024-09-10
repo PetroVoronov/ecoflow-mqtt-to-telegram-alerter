@@ -122,7 +122,7 @@ const ecoflowAPIURL = 'https://api.ecoflow.com',
     timeout: 10000,
   }),
   ecoflowMQTTKeepAliveInterval = options.keepAlive * 1000,
-  ecoflowMQTTLogAliveInterval = options.logAliveInterval * 60 * 1000;
+  ecoflowMQTTLogAliveInterval = options.logAliveStatusInterval * 60 * 1000;
 
 const ecoFlowACInput = 'inv.acIn',
   ecoFlowACInputVoltage = `${ecoFlowACInput}Vol`,
@@ -526,7 +526,7 @@ function mqttKeepAliveCheck() {
   if (currentTimeStamp - lastMQTTMessageTimeStamp > ecoflowMQTTKeepAliveInterval) {
     logWarning(`Ecoflow MQTT client is not alive for ${options.keepAlive} seconds!`);
     mqttClient.reconnect();
-  } else if (options.logAliveInterval > 0 && currentTimeStamp - lastAliveInfoMessageTimeStamp > ecoflowMQTTLogAliveInterval) {
+  } else if (ecoflowMQTTLogAliveInterval > 0 && currentTimeStamp - lastAliveInfoMessageTimeStamp > ecoflowMQTTLogAliveInterval) {
     lastAliveInfoMessageTimeStamp = currentTimeStamp;
     logInfo(`Ecoflow MQTT client is alive!`);
   } else {
@@ -540,7 +540,7 @@ function mqttKeepAliveInit() {
       lastMQTTMessageTimeStamp = new Date().getTime();
       setInterval(mqttKeepAliveCheck, ecoflowMQTTKeepAliveInterval);
     }
-    if (options.logAliveInterval > 0) {
+    if (ecoflowMQTTLogAliveInterval > 0) {
       setInterval(() => {
         logInfo(`Ecoflow MQTT client is alive!`);
       }, ecoflowMQTTLogAliveInterval);
