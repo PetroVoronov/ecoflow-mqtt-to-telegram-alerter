@@ -28,7 +28,7 @@ let ecoflowUserName = process.env.ECOFLOW_USERNAME || cache.getItem('ecoflowUser
   apiHash = process.env.TELEGRAM_API_HASH || cache.getItem('telegramApiHash'),
   botAuthToken = process.env.TELEGRAM_BOT_AUTH_TOKEN || cache.getItem('telegramBotAuthToken'),
   chatId = parseInt(process.env.TELEGRAM_CHAT_ID) || cache.getItem('telegramChatId', 'number'),
-  topicId = parseInt(process.env.TELEGRAM_TOPIC_ID) || cache.getItem('telegramTopicId', 'number'),
+  topicId = (process.env.TELEGRAM_TOPIC_ID ? parseInt(process.env.TELEGRAM_TOPIC_ID) : cache.getItem('telegramTopicId')) || 0,
   targetEntity;
 
 if (ecoflowUserName) cache.setItem('ecoflowUserName', ecoflowUserName);
