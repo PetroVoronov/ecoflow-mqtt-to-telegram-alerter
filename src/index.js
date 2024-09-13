@@ -623,6 +623,7 @@ function mqttSetMainHandlers() {
     logInfo('Ecoflow MQTT broker is connected ...');
     mqttSubscribe();
   });
+  mqttClient.on('message', mqttSetMessageHandler);
   mqttClient.on('reconnect', () => {
     logInfo('Ecoflow MQTT broker is reconnecting ...');
   });
@@ -677,9 +678,7 @@ function mqttSubscribe() {
       logInfo(`Ecoflow MQTT subscription is successful. Connecting to Telegram ...`);
       getTelegramPrepared()
         .then(() => {
-          logInfo('Telegram is prepared.');
-          mqttClient.on('message', mqttSetMessageHandler);
-          logInfo('Ecoflow MQTT message handler is set.');
+          logInfo('Telegram is prepared. Ready to receive messages!');
         })
         .catch((error) => {
           logError(`Telegram is not ready: ${error}`);
