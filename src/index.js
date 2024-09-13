@@ -14,6 +14,7 @@ const axios = require('axios');
 const {v4: uuidv4} = require('uuid');
 const mqtt = require('mqtt');
 const fs = require('node:fs');
+const { log } = require('node:console');
 
 const options = yargs
   .usage('Usage: $0 [options]')
@@ -673,11 +674,12 @@ function mqttSubscribe() {
       logError(`Ecoflow MQTT subscription error: ${error}`);
       gracefulExit();
     } else {
-      logInfo(`Ecoflow MQTT subscription is successful. Listening to messages ...`);
+      logInfo(`Ecoflow MQTT subscription is successful. Connecting to Telegram ...`);
       getTelegramPrepared()
         .then(() => {
-          logInfo('Telegram is prepared. Subscribing to MQTT topic ...');
+          logInfo('Telegram is prepared.');
           mqttClient.on('message', mqttSetMessageHandler);
+          logInfo('Ecoflow MQTT message handler is set.');
         })
         .catch((error) => {
           logError(`Telegram is not ready: ${error}`);
