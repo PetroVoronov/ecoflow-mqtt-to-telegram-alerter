@@ -678,7 +678,7 @@ function mqttSubscribe() {
       logInfo(`Ecoflow MQTT subscription is successful. Connecting to Telegram ...`);
       getTelegramPrepared()
         .then(() => {
-          logInfo('Telegram is prepared. Ready to receive messages!');
+          logInfo('Telegram is prepared. Ready to receive MQTT messages!');
         })
         .catch((error) => {
           logError(`Telegram is not ready: ${error}`);
