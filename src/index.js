@@ -382,11 +382,11 @@ function telegramUserSessionMigrate() {
       logDebug('User session migrated successfully.');
       fs.rmdirSync('data/session/user');
     } else {
-      logDebug('User session not found. Nothing to migrate.');
+      logDebug('Old user session not found. Nothing to migrate.');
     }
   } catch (error) {
     if (error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/user') {
-      logDebug('User session not found. Nothing to migrate.');
+      logDebug('Old user session not found. Nothing to migrate.');
     } else {
       logError(`Error migrating user session: ${error}`);
       gracefulExit();
