@@ -1,6 +1,6 @@
 {
   "name": "ecoflow-mqtt-to-telegram-alerter",
-  "version": "1.1.7",
+  "version": "1.2.0",
   "description": "A Telegram \"alerter\" working as user or bot, using MTProto via [gramjs](https://github.com/gram-js/gramjs), to raise alert messages from appropriate EcoFlow device.",
   "main": "src/index.js",
   "keywords": [
@@ -19,14 +19,15 @@
     "mqtt": "^5.10.0",
     "node-localstorage": "^3.0.5",
     "strftime": "^0.10.3",
+    "telegraf": "^4.16.3",
     "telegram": "^2.23.10",
     "uuid": "^10.0.0",
     "yargs": "^17.7.2"
   },
   "scripts": {
     "preversion": "genversion src/version.js --property name,version",
-    "tag" : "git tag -a v$npm_package_version -m \"Version $npm_package_version\"",
-    "tag-push" : "git push origin --tags",
+    "tag": "git tag -a v$npm_package_version -m \"Version $npm_package_version\"",
+    "tag-push": "git push origin --tags",
     "lint": "eslint .",
     "start": "node --env-file=.env src/index.js",
     "debug": "node --env-file=.env src/index.js --debug",

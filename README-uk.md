@@ -23,7 +23,7 @@
 - Пристрій Ecoflow: протестовано з Ecoflow DELTA Pro. Має працювати з іншими пристроями Ecoflow, які підтримують MQTT. (Будь ласка, зверніться до [EcoFlow to Prometheus exporter](https://github.com/berezhinskiy/ecoflow_exporter)).
 - Встановлений Node.js або Docker.
 - Пристрій Ecoflow (серійний номер) та облікові дані розробника з [EcoFlow Developer Platform](https://developer.ecoflow.com/).
-- Ідентифікатор API та хеш-ключ облікового запису Telegram, токен бота (якщо сповіщення генеруватиметься ботом), ідентифікатор цільового користувача/чату/групи/форуму (включно з topicId для форуму). Деталі щодо API Telegram можна знайти [тут](https://core.telegram.org/api/obtaining_api_id).
+- Ідентифікатор API та хеш-ключ облікового запису Telegram або токен Telegram бота (якщо сповіщення генеруватиметься ботом), ідентифікатор цільового користувача/чату/групи/форуму (включно з topicId для форуму). Деталі щодо API Telegram можна знайти [тут](https://core.telegram.org/api/obtaining_api_id).
 - Ідентифікатор цільового користувача, чату або групи/форуму в Telegram та ідентифікатор теми для форуму (в іншому випадку має бути встановлено на 0).
 
 ### Отримання ідентифікатора чату в Telegram
@@ -57,20 +57,29 @@ docker pull petrovoronov/ecoflow-mqtt-to-telegram-alerter
     ```
 
 ## Передача базових параметрів конфігурації
-Базові параметри конфігурації, включно з обліковими даними Ecoflow і Telegram, можуть передаватися як змінні середовища:
+Базові параметри конфігурації, включаючи облікові дані Telegram, можуть бути передані як змінні середовища, або ви можете пропустити це, і програма запросить вас ввести їх інтерактивно.
 
+### Змінні середовища у разі роботи як користувач Telegram (за замовчуванням):
 ```sh
 export ECOFLOW_USERNAME=your_ecoflow_username
 export ECOFLOW_PASSWORD=your_ecoflow_password
 export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
 export TELEGRAM_API_ID=your_telegram_api_id
 export TELEGRAM_API_HASH=your_telegram_api_hash
-export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
 export TELEGRAM_CHAT_ID=your_telegram_chat_id
 export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 ```
 
-або ви можете пропустити цей крок, і програма попросить вас ввести їх інтерактивно.
+### Змінні середовища у разі роботи як бот Telegram:
+
+```sh
+export ECOFLOW_USERNAME=your_ecoflow_username
+export ECOFLOW_PASSWORD=your_ecoflow_password
+export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
+export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
+export TELEGRAM_CHAT_ID=your_telegram_chat_id
+export TELEGRAM_TOPIC_ID=your_telegram_topic_id
+```
 
 Після першого запуску ці параметри будуть збережені в каталозі `data/storage` і будуть використовуватися для наступних запусків.
 Таким чином, вас попросять ввести параметри лише один раз (або ви повинні передати їх як змінні середовища лише під час першого запуску).
@@ -81,17 +90,17 @@ export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 
 Програму можна налаштувати за допомогою таких параметрів командного рядка:
 
-| Параметр                         | Псевдонім | Опис                                                                                          | Тип     | За замовчуванням                 | Обов'язково |
-|----------------------------------|-----------|-----------------------------------------------------------------------------------------------|---------|----------------------------------|-------------|
-| `-l, --language`                 | `-l`      | Код мови для інтернаціоналізації                                                              | Рядок   | `en`                             | Ні          |
-| `-b, --as-bot`                   | `-b`      | Запуск як екземпляр бота                                                                      | Логічний |                                  | Ні          |
-| `-k, --keep-alive`               | `-k`      | Перевірка чи MQTT клієнт активний кожні X секунд                                              | Число   | `60`                             | Ні          |
-| `--log-alive-status-interval`    |           | Запис статусу MQTT клієнта кожні Y хвилин                                                     | Число   | `0`                              | Ні          |
-| `-p, --pin-message`              | `-p`      | Відкріпити повідомлення з чату                                                                | Логічний | `false`                          | Ні          |
-| `-u, --unpin-previous`           | `-u`      | Закріпити повідомлення в чаті                                                                 | Логічний | `false`                          | Ні          |
-| `-t, --add-timestamp`            | `-t`      | Додати мітку часу до повідомлення                                                             | Логічний | `false`                          | Ні          |
-| `-tz, --time-zone`               | `-tz`     | Часовий пояс для мітки часу                                                                   | Рядок   | Значення змінної середовища `TZ` або порожній рядок | Ні          |
-| `-d, --debug`                    | `-d`      | Детальний рівень журналювання                                                             | Рядок   |                                  | Ні          |
+| Параметр                         | Псевдонім | Опис | Тип | За замовчуванням | Обов'язково |
+|----------------------------------|-----------|------|-----|------------------|-------------|
+| `-l, --language`                 | `-l`      | Код мови для інтернаціоналізації | Рядок | `en` | Ні |
+| `-b, --as-user`                  |           | Запуск як екземпляр бота | Логічний |  | Ні |
+| `-k, --keep-alive`               | `-k`      | Перевірка чи MQTT клієнт активний кожні X секунд | Число | `60` | Ні |
+| `--log-alive-status-interval`    |           | Запис статусу MQTT клієнта кожні Y хвилин | Число | `0` | Ні |
+| `-p, --pin-message`              | `-p`      | Відкріпити повідомлення з чату | Логічний | `false` | Ні |
+| `-u, --unpin-previous`           | `-u`      | Закріпити повідомлення в чаті | Логічний | `false` | Ні |
+| `-t, --add-timestamp`            | `-t`      | Додати мітку часу до повідомлення | Логічний | `false` | Ні |
+| `-tz, --time-zone`               | `-tz`     | Часовий пояс для мітки часу | Рядок | Значення змінної середовища `TZ` або порожній рядок | Ні |
+| `-d, --debug`                    | `-d`      | Детальний рівень журналювання | Рядок | | Ні |
 
 ## Запуск програми
 
@@ -100,7 +109,7 @@ export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 Приклад з усіма можливими параметрами командного рядка:
 
 ```sh
-node index.js --language en --as-bot --keep-alive 30 --log-alive-status-interval 5 --pin-message --unpin-previous --add-timestamp --time-zone "America/New_York" --debug
+node index.js --language en --as-user --keep-alive 30 --log-alive-status-interval 5 --pin-message --unpin-previous --add-timestamp --time-zone "America/New_York" --debug
 ```
 
 ### Docker
@@ -109,7 +118,7 @@ node index.js --language en --as-bot --keep-alive 30 --log-alive-status-interval
 
 Через обмеження Docker-середовища програма не зможе інтерактивно запитувати відсутні параметри конфігурації. Саме тому необхідно виконати перший запуск у інтерактивному режимі, щоб надати відсутні параметри.
 
-#### Об'єми Docker
+#### Docker Volumes
 
 **Необхідно змонтувати каталог даних програми в контейнер:**
 - `/app/data` - для даних програми, включаючи конфігурації та інші актуальні дані. Обов'язково для монтування!
@@ -118,21 +127,24 @@ node index.js --language en --as-bot --keep-alive 30 --log-alive-status-interval
 Крім того, ви можете змонтувати каталог локалізації в контейнер:
 - `/app/locales` - для файлів локалізації, якщо ви хочете використовувати власні повідомлення у Telegram-чаті. Необов'язково для монтування.
 
-#### Перше запускання Docker
+#### Перший запуск Docker для роботи як користувач Telegram або як бот Telegram для налаштування всіх основних параметрів конфігурації в інтерактивному режимі
 
-Отже, перше запускання має виглядати як одне з наведеного нижче:
+Через специфіку середовища Docker, додаток не зможе запитати відсутні параметри конфігурації в інтерактивному режимі. Тому вам потрібно зробити перший запуск в інтерактивному режимі, щоб надати відсутні параметри.
 
-- для роботи як користувача Telegram і встановлення всіх основних параметрів конфігурації в інтерактивному режимі:
+Отже, перший запуск повинен бути таким:
+
+- для роботи як користувач Telegram і налаштування всіх основних параметрів конфігурації в інтерактивному режимі:
     ```sh
     docker run -it --name ecoflow-mqtt-to-telegram-alerter \
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
-        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
+        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
+        node src/index.js --as-user
     ```
 
-- для роботи як користувача Telegram і встановлення всіх основних параметрів конфігурації через змінні середовища:
+- для роботи як користувач Telegram і налаштування всіх основних параметрів конфігурації через змінні середовища (але інтерактивний режим все ще потрібен):
     ```sh
-    docker run -d --name ecoflow-mqtt-to-telegram-alerter \
+    docker run -it --name ecoflow-mqtt-to-telegram-alerter \
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         -e ECOFLOW_USERNAME=your_ecoflow_username \
@@ -142,38 +154,37 @@ node index.js --language en --as-bot --keep-alive 30 --log-alive-status-interval
         -e TELEGRAM_API_HASH=your_telegram_api_hash \
         -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
         -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
+        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
+        node src/index.js --as-user
+    ```
+
+- для роботи як бот Telegram і налаштування всіх основних параметрів конфігурації в інтерактивному режимі:
+    ```sh
+    docker run -it -d --name ecoflow-mqtt-to-telegram-alerter \
+        -v /path/to/your/data:/app/data \
+        -v /path/to/your/locales:/app/locales \
         petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
     ```
 
-- для роботи як бот Telegram і встановлення всіх основних параметрів конфігурації в інтерактивному режимі:
-    ```sh
-    docker run -it --name ecoflow-mqtt-to-telegram-alerter \
-        -v /path/to/your/data:/app/data \
-        -v /path/to/your/locales:/app/locales \
-        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
-        node src/index.js --as-bot
-    ```
+Після першого запуску додаток збереже параметри конфігурації та додаткову інформацію - будь ласка, зупиніть контейнер, натиснувши `Ctrl+C`, і запустіть його знову за допомогою команд з наступного розділу.
 
+#### Перший запуск Docker для роботи як бот Telegram і налаштування всіх основних параметрів конфігурації через змінні середовища
 
-- для роботи як бот Telegram і встановлення всіх основних параметрів конфігурації через змінні середовища:
-    ```sh
-    docker run -d --name ecoflow-mqtt-to-telegram-alerter \
-        -v /path/to/your/data:/app/data \
-        -v /path/to/your/locales:/app/locales \
-        -e ECOFLOW_USERNAME=your_ecoflow_username \
-        -e ECOFLOW_PASSWORD=your_ecoflow_password \
-        -e ECOFLOW_DEVICE_SN=your_ecoflow_device_sn \
-        -e TELEGRAM_API_ID=your_telegram_api_id \
-        -e TELEGRAM_API_HASH=your_telegram_api_hash \
-        -e TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token \
-        -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
-        -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
-        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
-        node src/index.js --as-bot
-    ```
+Інтерактивний режим для роботи як бот Telegram не потрібен. Тому перший запуск повинен бути таким:
+```sh
+docker run -d --name ecoflow-mqtt-to-telegram-alerter \
+    -v /path/to/your/data:/app/data \
+    -v /path/to/your/locales:/app/locales \
+    -e ECOFLOW_USERNAME=your_ecoflow_username \
+    -e ECOFLOW_PASSWORD=your_ecoflow_password \
+    -e ECOFLOW_DEVICE_SN=your_ecoflow_device_sn \
+    -e TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token \
+    -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
+    -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
+    petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
+```
+
 **Важлива примітка: вкажіть усі потрібні пізніше параметри командного рядка під час першого запуску!**
-
-Після першого запуску застосунок збереже параметри конфігурації та додаткову інформацію - будь ласка, зупиніть контейнер, натиснувши `Ctrl+C`, і запустіть його знову за допомогою команд із наступного розділу.
 
 #### Наступні запуски Docker
 
@@ -195,6 +206,8 @@ docker stop ecoflow-mqtt-to-telegram-alerter
 
 Щоб запустити застосунок за допомогою Docker Compose, створіть файл `docker-compose.yml` з наступним вмістом:
 
+### У разі роботи як користувач Telegram:
+
 ```yaml
 version: '3'
 services:
@@ -209,10 +222,29 @@ services:
             - ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
             - TELEGRAM_API_ID=your_telegram_api_id
             - TELEGRAM_API_HASH=your_telegram_api_hash
+            - TELEGRAM_CHAT_ID=your_telegram_chat_id
+            - TELEGRAM_TOPIC_ID=your_telegram_topic_id
+        command: node src/index.js --as-user
+```
+
+### У разі роботи як бот Telegram:
+
+```yaml
+version: '3'
+services:
+    ecoflow-mqtt-to-telegram-alerter:
+        image: petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
+        volumes:
+            - /path/to/your/data:/app/data
+            - /path/to/your/locales:/app/locales
+        environment:
+            - ECOFLOW_USERNAME=your_ecoflow_username
+            - ECOFLOW_PASSWORD=your_ecoflow_password
+            - ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
             - TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
-        command: node src/index.js --as-bot
+        command: node src/index.js
 ```
 
 Замініть `/path/to/your/data` та `/path/to/your/locales` на фактичні шляхи на вашій системі, де ви хочете зберігати дані застосунку та файли локалізації.
