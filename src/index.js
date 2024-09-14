@@ -315,6 +315,7 @@ function getTelegramClient() {
             connectionRetries: 5,
             useWSS: true,
             connectionTimeout: 10000,
+            appVersion: `${scriptName} v${scriptVersion}`,
           });
           const rl = readline.createInterface({
             input,
