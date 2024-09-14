@@ -7,14 +7,13 @@ const stringify = require('json-stringify-safe');
 const {LocalStorage} = require('node-localstorage');
 const yargs = require('yargs');
 const {Cache} = require('./modules/cache/Cache');
-const {logLevelInfo, logLevelDebug, setLogLevel, logDebug, logInfo, logWarning, logError} = require('./modules/logging/logging');
+const {securedLogger: log} = require('./modules/logging/logging');
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
 const axios = require('axios');
 const {v4: uuidv4} = require('uuid');
 const mqtt = require('mqtt');
 const fs = require('node:fs');
-const { log } = require('node:console');
 
 const options = yargs
   .usage('Usage: $0 [options]')
@@ -84,9 +83,12 @@ const options = yargs
   .alias('h', 'help')
   .epilog(`${scriptName} v${scriptVersion}`).argv;
 
-setLogLevel(options.debug ? logLevelDebug : logLevelInfo);
+if (options.debug) {
+  log.setLevel('debug');
+}
+log.appendMaskWord('apiId', 'apiHash', 'DeviceSN', 'ClientId');
 
-logInfo(`Starting ${scriptName} v${scriptVersion} ...`);
+log.info(`Starting ${scriptName} v${scriptVersion} ...`);
 
 i18n.setLocale(options.language);
 
@@ -112,28 +114,28 @@ let targetEntity = null;
 let targetTitle = '';
 let parseMode = 'html';
 
-const ecoflowAPIURL = 'https://api.ecoflow.com',
-  ecoflowAPIAuthenticationPath = '/auth/login',
-  ecoflowAPICertificationPath = '/iot-auth/app/certification',
-  headers = {lang: 'en_US', 'content-type': 'application/json'},
-  ecoflowAPI = axios.create({
-    baseURL: ecoflowAPIURL,
-    timeout: 10000,
-  }),
-  ecoflowMQTTKeepAliveInterval = options.keepAlive * 1000,
-  ecoflowMQTTLogAliveInterval = options.logAliveStatusInterval * 60 * 1000;
+const ecoflowAPIURL = 'https://api.ecoflow.com';
+const ecoflowAPIAuthenticationPath = '/auth/login';
+const ecoflowAPICertificationPath = '/iot-auth/app/certification';
+const headers = { lang: 'en_US', 'content-type': 'application/json' };
+const ecoflowAPI = axios.create({
+  baseURL: ecoflowAPIURL,
+  timeout: 10000,
+});
+const ecoflowMQTTKeepAliveInterval = options.keepAlive * 1000;
+const ecoflowMQTTLogAliveInterval = options.logAliveStatusInterval * 60 * 1000;
 
-const ecoFlowACInput = 'inv.acIn',
-  ecoFlowACInputVoltage = `${ecoFlowACInput}Vol`,
-  ecoFlowACInputFrequency = `${ecoFlowACInput}Freq`,
-  ecoFlowACInputCurrent = `${ecoFlowACInput}Amp`;
+const ecoFlowACInput = 'inv.acIn';
+const ecoFlowACInputVoltage = `${ecoFlowACInput}Vol`;
+const ecoFlowACInputFrequency = `${ecoFlowACInput}Freq`;
+const ecoFlowACInputCurrent = `${ecoFlowACInput}Amp`;
 
-let mqttClient = null,
-  mqttOptions = null,
-  ecoflowTopic = '/app/device/property/',
-  telegramClient = null,
-  lastMQTTMessageTimeStamp = new Date().getTime(),
-  lastAliveInfoMessageTimeStamp = new Date().getTime();
+let mqttClient = null;
+let mqttOptions = null;
+let ecoflowTopic = '/app/device/property/';
+let telegramClient = null;
+let lastMQTTMessageTimeStamp = new Date().getTime();
+let lastAliveInfoMessageTimeStamp = new Date().getTime();
 
 function getEcoFlowCredentials() {
   return new Promise((resolve, reject) => {
@@ -335,7 +337,7 @@ function getTelegramClient() {
             })
             .then(() => {
               rl.close();
-              logDebug('Telegram client is connected');
+              log.debug('Telegram client is connected');
               client.setParseMode(parseMode);
               resolve(client);
             })
@@ -376,17 +378,17 @@ function telegramUserSessionMigrate() {
       oldSessionsExists = true;
       fs.readdirSync('data/session/user').forEach((file) => {
         const newFile = file.replace('%2F' + 'user', '');
-        logDebug(`Migrating user session file: user/${file} to ${newFile}`);
+        log.debug(`Migrating user session file: user/${file} to ${newFile}`);
         fs.renameSync(`data/session/user/${file}`, `data/session/${newFile}`);
       });
-      logDebug('User session migrated successfully.');
+      log.debug('User session migrated successfully.');
       fs.rmdirSync('data/session/user');
     } else {
-      logDebug('Old user session not found. Nothing to migrate.');
+      log.debug('Old user session not found. Nothing to migrate.');
     }
   } catch (error) {
     if (error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/user') {
-      logDebug('Old user session not found. Nothing to migrate.');
+      log.debug('Old user session not found. Nothing to migrate.');
     } else {
       logError(`Error migrating user session: ${error}`);
       gracefulExit();
@@ -399,7 +401,7 @@ function telegramUserSessionMigrate() {
       }
     } catch (error) {
       if (!(error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/bot')) {
-        logDebug(`Error removing bot session: ${error}`);
+        log.debug(`Error removing bot session: ${error}`);
       }
     }
   }
@@ -412,11 +414,11 @@ function getTelegramTargetEntity() {
         .getChat(telegramChatId)
         .then((entity) => {
           targetTitle = entity.title || `${entity.first_name || ''} ${entity.last_name || ''} (${entity.username || ''})`;
-          logDebug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
+          log.debug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
           resolve(entity);
         })
         .catch((error) => {
-          logWarning(`Telegram chat with ID ${telegramChatId} not found! Error: ${error}`);
+          log.warn(`Telegram chat with ID ${telegramChatId} not found! Error: ${error}`);
           reject(error);
         });
     } else {
@@ -451,14 +453,14 @@ function getTelegramTargetEntity() {
                     // eslint-disable-next-line sonarjs/no-nested-functions
                     const targetTopic = response.topics.find((topic) => topic.id === telegramTopicId);
                     if (targetTopic) {
-                      logDebug(`Telegram topic "${targetTopic.title}" in chat "${targetTitle}" with ID ${telegramChatId} found!`);
+                      log.debug(`Telegram topic "${targetTopic.title}" in chat "${targetTitle}" with ID ${telegramChatId} found!`);
                       resolve(targetDialog.entity);
                     } else {
-                      logWarning(`Topic with id ${telegramTopicId} not found in "${targetTitle}" (${telegramChatId})!`);
+                      log.warn(`Topic with id ${telegramTopicId} not found in "${targetTitle}" (${telegramChatId})!`);
                       reject(new Error(`Topic with id ${telegramTopicId} not found in "${targetTitle}" (${telegramChatId})!`));
                     }
                   } else {
-                    logWarning(`No topics found in "${targetTitle}" (${telegramChatId})!`);
+                    log.warn(`No topics found in "${targetTitle}" (${telegramChatId})!`);
                     reject(new Error(`No topics found in "${targetTitle}" (${telegramChatId})!`));
                   }
                 })
@@ -466,7 +468,7 @@ function getTelegramTargetEntity() {
                   reject(error);
                 });
             } else {
-              logDebug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
+              log.debug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
               resolve(targetDialog.entity);
             }
           } else {
@@ -512,16 +514,17 @@ function getTelegramPrepared() {
 }
 
 function telegramMessageOnChange(currentInputState) {
-  const timeStampOptions = {timeStyle: 'short', dateStyle: 'short'};
-  if (options.timeZone) {
-    timeStampOptions.timeZone = options.timeZone;
-  }
-  const timeStamp = new Date().toLocaleString(options.language, timeStampOptions),
-    messageText =
-      (options.addTimestamp ? timeStamp + ': ' : '') + i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off');
+  const inputACConnectionState = cache.getItem('inputACConnectionState');
+  if (currentInputState !== inputACConnectionState && telegramClient !== null) {
+    const timeStampOptions = {timeStyle: 'short', dateStyle: 'short'};
+    if (options.timeZone) {
+      timeStampOptions.timeZone = options.timeZone;
+    }
+    const timeStamp = new Date().toLocaleString(options.language, timeStampOptions),
+      messageText =
+        (options.addTimestamp ? timeStamp + ': ' : '') + i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off');
 
-  logInfo(`${messageText}`);
-  if (telegramClient !== null) {
+    log.info(`${messageText}`);
     if (options.asUser === true) {
       const telegramMessage = {
         message: messageText,
@@ -532,18 +535,18 @@ function telegramMessageOnChange(currentInputState) {
       telegramClient
         .sendMessage(targetEntity, telegramMessage)
         .then((message) => {
-          logDebug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
+          log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
           const previousMessageId = cache.getItem('lastMessageId');
           cache.setItem('lastMessageId', message.message_id);
           if (options.pinMessage) {
             telegramClient
               .pinMessage(targetEntity, message.id)
               .then(() => {
-                logDebug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
+                log.debug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
                 if (options.unpinPrevious) {
                   if (previousMessageId !== undefined) {
                     telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
-                      logDebug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
+                      log.debug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
                     });
                   }
                 }
@@ -567,18 +570,18 @@ function telegramMessageOnChange(currentInputState) {
       telegramClient.telegram
         .sendMessage(telegramChatId, messageText, messageOptions)
         .then((message) => {
-          logDebug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
+          log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
           const previousMessageId = cache.getItem('lastMessageId');
           cache.setItem('lastMessageId', message.message_id);
           if (options.pinMessage) {
             telegramClient.telegram
               .pinChatMessage(telegramChatId, message.message_id)
               .then(() => {
-                logDebug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
+                log.debug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
                 if (options.unpinPrevious) {
                   if (previousMessageId !== undefined) {
                     telegramClient.telegram.unpinChatMessage(targetTitle, previousMessageId).then(() => {
-                      logDebug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
+                      log.debug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
                     });
                   }
                 }
@@ -592,6 +595,7 @@ function telegramMessageOnChange(currentInputState) {
           logError(`Telegram message error: ${error}`);
         });
     }
+    cache.setItem('inputACConnectionState', currentInputState);
   }
 }
 
@@ -603,55 +607,51 @@ function mqttSetMessageHandler(topic, message) {
     typeof data.params?.[ecoFlowACInputCurrent] === 'number'
   ) {
     lastMQTTMessageTimeStamp = new Date().getTime();
-    const inputVoltage = data.params[ecoFlowACInputVoltage] / 1000,
-      inputCurrent = data.params[ecoFlowACInputCurrent] / 1000,
-      inputFrequency = data.params[ecoFlowACInputFrequency],
-      currentInputState = inputVoltage > 0 && inputCurrent > 0 && inputFrequency > 0;
-    let inputACConnectionState = cache.getItem('inputACConnectionState');
-    logDebug(`Ecoflow AC input voltage: ${inputVoltage} V`);
-    logDebug(`Ecoflow AC input current: ${inputCurrent} A`);
-    logDebug(`Ecoflow AC input frequency: ${inputFrequency} Hz`);
-    if (currentInputState !== inputACConnectionState) {
-      cache.setItem('inputACConnectionState', currentInputState);
-      telegramMessageOnChange(currentInputState);
-    }
+    const inputVoltage = data.params[ecoFlowACInputVoltage] / 1000;
+    const inputCurrent = data.params[ecoFlowACInputCurrent] / 1000;
+    const inputFrequency = data.params[ecoFlowACInputFrequency];
+    const currentInputState = inputVoltage > 0 && inputCurrent > 0 && inputFrequency > 0;
+    log.debug(`Ecoflow AC input voltage: ${inputVoltage} V`);
+    log.debug(`Ecoflow AC input current: ${inputCurrent} A`);
+    log.debug(`Ecoflow AC input frequency: ${inputFrequency} Hz`);
+    telegramMessageOnChange(currentInputState);
   }
 }
 
 function mqttSetMainHandlers() {
   mqttClient.on('connect', () => {
-    logInfo('Ecoflow MQTT broker is connected ...');
+    log.info('Ecoflow MQTT broker is connected ...');
     mqttSubscribe();
   });
   mqttClient.on('message', mqttSetMessageHandler);
   mqttClient.on('reconnect', () => {
-    logInfo('Ecoflow MQTT broker is reconnecting ...');
+    log.info('Ecoflow MQTT broker is reconnecting ...');
   });
   mqttClient.on('error', (error) => {
     logError(`Ecoflow MQTT broker error: ${error}`);
     gracefulExit();
   });
   mqttClient.on('close', () => {
-    logInfo('Ecoflow MQTT broker is closed ...');
+    log.info('Ecoflow MQTT broker is closed ...');
   });
   mqttClient.on('offline', () => {
-    logInfo('Ecoflow MQTT broker is offline ...');
+    log.info('Ecoflow MQTT broker is offline ...');
   });
   mqttClient.on('end', () => {
-    logInfo('Ecoflow MQTT broker is ended ...');
+    log.info('Ecoflow MQTT broker is ended ...');
   });
 }
 
 function mqttKeepAliveCheck() {
   const currentTimeStamp = new Date().getTime();
   if (currentTimeStamp - lastMQTTMessageTimeStamp > ecoflowMQTTKeepAliveInterval) {
-    logWarning(`Ecoflow MQTT client is not alive for ${options.keepAlive} seconds!`);
+    log.warn(`Ecoflow MQTT client is not alive for ${options.keepAlive} seconds!`);
     mqttClient.reconnect();
   } else if (ecoflowMQTTLogAliveInterval > 0 && currentTimeStamp - lastAliveInfoMessageTimeStamp > ecoflowMQTTLogAliveInterval) {
     lastAliveInfoMessageTimeStamp = currentTimeStamp;
-    logInfo(`Ecoflow MQTT client is alive!`);
+    log.info(`Ecoflow MQTT client is alive!`);
   } else {
-    logDebug(`Ecoflow MQTT client is alive!`);
+    log.debug(`Ecoflow MQTT client is alive!`);
   }
 }
 
@@ -663,7 +663,7 @@ function mqttKeepAliveInit() {
     }
     if (ecoflowMQTTLogAliveInterval > 0) {
       setInterval(() => {
-        logInfo(`Ecoflow MQTT client is alive!`);
+        log.info(`Ecoflow MQTT client is alive!`);
       }, ecoflowMQTTLogAliveInterval);
     }
   }
@@ -675,10 +675,10 @@ function mqttSubscribe() {
       logError(`Ecoflow MQTT subscription error: ${error}`);
       gracefulExit();
     } else {
-      logInfo(`Ecoflow MQTT subscription is successful. Connecting to Telegram ...`);
+      log.info(`Ecoflow MQTT subscription is successful. Connecting to Telegram ...`);
       getTelegramPrepared()
         .then(() => {
-          logInfo('Telegram is prepared. Ready to receive MQTT messages!');
+          log.info('Telegram is prepared. Ready to receive MQTT messages!');
         })
         .catch((error) => {
           logError(`Telegram is not ready: ${error}`);
@@ -694,7 +694,7 @@ function gracefulExit() {
     if (mqttClient !== null && mqttClient.connected === true) {
       mqttClient.end();
       mqttClient = null;
-      logInfo(`Ecoflow MQTT broker is disconnected!`);
+      log.info(`Ecoflow MQTT broker is disconnected!`);
     }
     exit(0);
   };
@@ -702,11 +702,11 @@ function gracefulExit() {
     telegramClient
       .disconnect()
       .then(() => {
-        logInfo(`Telegram client is disconnected!`);
+        log.info(`Telegram client is disconnected!`);
         telegramClient
           .destroy()
           .then(() => {
-            logInfo(`Telegram client is destroyed!`);
+            log.info(`Telegram client is destroyed!`);
             telegramClient = null;
             exitMqtt();
           })
@@ -722,22 +722,18 @@ function gracefulExit() {
   } else if (telegramClient !== null && options.user === false) {
     try {
       telegramClient.stop();
-      logInfo(`Telegram bot is stopped!`);
+      log.info(`Telegram bot is stopped!`);
       // eslint-disable-next-line sonarjs/no-ignored-exceptions
     } catch (error) {
-      logInfo(`Telegram bot is stopped!`);
+      log.info(`Telegram bot is stopped!`);
     }
     exitMqtt();
   } else if (mqttClient !== null && mqttClient.connected === true) {
     exitMqtt();
   } else {
-    logInfo('All clients are disconnected!');
+    log.info('All clients are disconnected!');
     exit(0);
   }
-}
-
-function maskString(value) {
-  return typeof value === 'string' ? value.substring(0, 3) + '*'.repeat(value.length - 3) : value;
 }
 
 process.on('SIGINT', gracefulExit);
@@ -757,7 +753,7 @@ getEcoFlowCredentials()
         {headers: headers},
       )
       .then((response) => {
-        logInfo('Ecoflow authentication is successful. Getting certification ...');
+        log.info('Ecoflow authentication is successful. Getting certification ...');
         let token, userId, userName;
         try {
           token = response.data.data.token;
@@ -766,9 +762,9 @@ getEcoFlowCredentials()
         } catch (error) {
           throw new Error(`Failed to extract key ${error.message} from response: ${stringify(response)}`);
         }
-        logDebug(`Ecoflow token: ${maskString(token)}`);
-        logDebug(`Ecoflow userId: ${maskString(userId)}`);
-        logDebug(`Ecoflow userName: ${userName}`);
+        log.debug(`Ecoflow ` , {token});
+        log.debug(`Ecoflow ` , {userId});
+        log.debug(`Ecoflow ` , {userName});
         const headers = {
           lang: 'en_US',
           authorization: `Bearer ${token}`,
@@ -776,7 +772,7 @@ getEcoFlowCredentials()
         ecoflowAPI
           .get(`${ecoflowAPICertificationPath}?userId=${userId}`, {headers: headers})
           .then((response) => {
-            logInfo('Ecoflow certification is successful. Getting MQTT client ...');
+            log.info('Ecoflow certification is successful. Getting MQTT client ...');
             let mqttUrl, mqttPort, mqttProtocol, mqttUsername, mqttPassword, mqttClientId;
             try {
               mqttUrl = response.data.data.url;
@@ -789,12 +785,13 @@ getEcoFlowCredentials()
             } catch (error) {
               throw new Error(`Failed to extract key ${error.message} from response: ${stringify(response)}`);
             }
-            logDebug(`Ecoflow MQTT URL: ${mqttUrl}`);
-            logDebug(`Ecoflow MQTT port: ${mqttPort}`);
-            logDebug(`Ecoflow MQTT protocol: ${mqttProtocol}`);
-            logDebug(`Ecoflow MQTT username: ${mqttUsername}`);
-            logDebug(`Ecoflow MQTT password: ${maskString(mqttPassword)}`);
-            logDebug(`Ecoflow MQTT client ID: ${maskString(mqttClientId)}`);
+            log.debug(`Ecoflow MQTT URL: ${mqttUrl}`);
+            log.debug(`Ecoflow MQTT port: ${mqttPort}`);
+            log.debug(`Ecoflow MQTT protocol: ${mqttProtocol}`);
+            log.debug(`Ecoflow `, {mqttUsername});
+            log.debug(`Ecoflow `, {mqttUsername});
+            log.debug(`Ecoflow `, {mqttClientId});
+
             const connectMQTTUrl = `${mqttProtocol}://${mqttUrl}:${mqttPort}`;
             mqttOptions = {
               clientId: mqttClientId,
@@ -808,7 +805,7 @@ getEcoFlowCredentials()
             ecoflowTopic += ecoflowDeviceSN;
             try {
               mqttClient = mqtt.connect(connectMQTTUrl, mqttOptions);
-              logInfo('Ecoflow MQTT broker is connected.');
+              log.info('Ecoflow MQTT broker is connected.');
               mqttSetMainHandlers();
             } catch (error) {
               logError(`Ecoflow MQTT broker connection error: ${error}`);
