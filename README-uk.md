@@ -1,5 +1,6 @@
 # Ecoflow MQTT to Telegram Alerter
 
+[![GitHub release](https://img.shields.io/github/v/release/PetroVoronov/ecoflow-mqtt-to-telegram-alerter)](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/releases)
 [![Docker Image Version](https://img.shields.io/docker/v/petrovoronov/ecoflow-mqtt-to-telegram-alerter)](https://hub.docker.com/r/petrovoronov/ecoflow-mqtt-to-telegram-alerter)
 [![Docker Pulls](https://img.shields.io/docker/pulls/petrovoronov/ecoflow-mqtt-to-telegram-alerter)](https://hub.docker.com/r/petrovoronov/ecoflow-mqtt-to-telegram-alerter)
 [![GitHub license](https://img.shields.io/github/license/PetroVoronov/ecoflow-mqtt-to-telegram-alerter)](LICENSE)
