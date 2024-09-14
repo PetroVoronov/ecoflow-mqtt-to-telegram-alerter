@@ -86,7 +86,7 @@ const options = yargs
 if (options.debug) {
   log.setLevel('debug');
 }
-log.appendMaskWord('apiId', 'apiHash', 'DeviceSN', 'ClientId');
+log.appendMaskWord('apiId', 'apiHash', 'DeviceSN', 'ClientId', 'phone');
 
 log.info(`Starting ${scriptName} v${scriptVersion} ...`);
 
@@ -179,19 +179,19 @@ function getEcoFlowCredentials() {
                   })
                   // eslint-disable-next-line sonarjs/no-nested-functions
                   .catch((error) => {
-                    logError(`Error: ${error}`);
+                    log.error(`Error: ${error}`);
                     rl.close();
                     reject(error);
                   });
               })
               .catch((error) => {
-                logError(`Error: ${error}`);
+                log.error(`Error: ${error}`);
                 rl.close();
                 reject(error);
               });
           })
           .catch((error) => {
-            logError(`Error: ${error}`);
+            log.error(`Error: ${error}`);
             rl.close();
             reject(error);
           });
@@ -222,13 +222,13 @@ function getAPIAttributes() {
               resolve({apiID: newApiId, hash});
             })
             .catch((error) => {
-              logError(`Error: ${error}`);
+              log.error(`Error: ${error}`);
               rl.close();
               reject(error);
             });
         })
         .catch((error) => {
-          logError(`Error: ${error}`);
+          log.error(`Error: ${error}`);
           rl.close();
           reject(error);
         });
@@ -253,7 +253,7 @@ function getBotAuthToken() {
           resolve(token);
         })
         .catch((error) => {
-          logError(`Error: ${error}`);
+          log.error(`Error: ${error}`);
           rl.close();
           reject(error);
         });
@@ -282,13 +282,13 @@ function getMessageTargetIds() {
               resolve();
             })
             .catch((error) => {
-              logError(`Error: ${error}`);
+              log.error(`Error: ${error}`);
               rl.close();
               reject(error);
             });
         })
         .catch((error) => {
-          logError(`Error: ${error}`);
+          log.error(`Error: ${error}`);
           rl.close();
           reject(error);
         });
@@ -332,7 +332,7 @@ function getTelegramClient() {
                 return rl.question('Enter your password: ');
               },
               onError: (error) => {
-                logError(`Telegram client error: ${error}`);
+                log.error(`Telegram client error: ${error}`);
               },
             })
             .then(() => {
@@ -343,12 +343,12 @@ function getTelegramClient() {
             })
             .catch((error) => {
               rl.close();
-              logError(`Telegram client connection error: ${error}`);
+              log.error(`Telegram client connection error: ${error}`);
               reject(error);
             });
         })
         .catch((error) => {
-          logError(`API attributes error: ${error}!`);
+          log.error(`API attributes error: ${error}!`);
           reject(error);
         });
     } else {
@@ -364,7 +364,7 @@ function getTelegramClient() {
           resolve(client);
         })
         .catch((error) => {
-          logError(`Bot Auth Token error: ${error}`);
+          log.error(`Bot Auth Token error: ${error}`);
           reject(error);
         });
     }
@@ -390,7 +390,7 @@ function telegramUserSessionMigrate() {
     if (error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/user') {
       log.debug('Old user session not found. Nothing to migrate.');
     } else {
-      logError(`Error migrating user session: ${error}`);
+      log.error(`Error migrating user session: ${error}`);
       gracefulExit();
     }
   }
@@ -497,17 +497,17 @@ function getTelegramPrepared() {
               })
               // eslint-disable-next-line sonarjs/no-nested-functions
               .catch((error) => {
-                logError(`Telegram target entity error: ${error}`);
+                log.error(`Telegram target entity error: ${error}`);
                 reject(error);
               });
           })
           .catch((error) => {
-            logError(`Message target IDs error: ${error}`);
+            log.error(`Message target IDs error: ${error}`);
             reject(error);
           });
       })
       .catch((error) => {
-        logError(`Telegram client error: ${error}`);
+        log.error(`Telegram client error: ${error}`);
         reject(error);
       });
   });
@@ -552,13 +552,13 @@ function telegramMessageOnChange(currentInputState) {
                 }
               })
               .catch((error) => {
-                logError(`Telegram message pin error: ${error}`);
+                log.error(`Telegram message pin error: ${error}`);
               });
           }
           cache.setItem('lastMessageId', message.id);
         })
         .catch((error) => {
-          logError(`Telegram message error: ${error}`);
+          log.error(`Telegram message error: ${error}`);
         });
     } else {
       const messageOptions = {
@@ -587,12 +587,12 @@ function telegramMessageOnChange(currentInputState) {
                 }
               })
               .catch((error) => {
-                logError(`Telegram message pin error: ${error}`);
+                log.error(`Telegram message pin error: ${error}`);
               });
           }
         })
         .catch((error) => {
-          logError(`Telegram message error: ${error}`);
+          log.error(`Telegram message error: ${error}`);
         });
     }
     cache.setItem('inputACConnectionState', currentInputState);
@@ -628,7 +628,7 @@ function mqttSetMainHandlers() {
     log.info('Ecoflow MQTT broker is reconnecting ...');
   });
   mqttClient.on('error', (error) => {
-    logError(`Ecoflow MQTT broker error: ${error}`);
+    log.error(`Ecoflow MQTT broker error: ${error}`);
     gracefulExit();
   });
   mqttClient.on('close', () => {
@@ -672,7 +672,7 @@ function mqttKeepAliveInit() {
 function mqttSubscribe() {
   mqttClient.subscribe(ecoflowTopic, (error) => {
     if (error) {
-      logError(`Ecoflow MQTT subscription error: ${error}`);
+      log.error(`Ecoflow MQTT subscription error: ${error}`);
       gracefulExit();
     } else {
       log.info(`Ecoflow MQTT subscription is successful. Connecting to Telegram ...`);
@@ -681,7 +681,7 @@ function mqttSubscribe() {
           log.info('Telegram is prepared. Ready to receive MQTT messages!');
         })
         .catch((error) => {
-          logError(`Telegram is not ready: ${error}`);
+          log.error(`Telegram is not ready: ${error}`);
           gracefulExit();
         });
       mqttKeepAliveInit();
@@ -711,12 +711,12 @@ function gracefulExit() {
             exitMqtt();
           })
           .catch((error) => {
-            logError(`Telegram client - nothing to destroy!`);
+            log.error(`Telegram client - nothing to destroy!`);
             exitMqtt();
           });
       })
       .catch((error) => {
-        logError(`Telegram client is not connected!`);
+        log.error(`Telegram client is not connected!`);
         exitMqtt();
       });
   } else if (telegramClient !== null && options.user === false) {
@@ -808,21 +808,21 @@ getEcoFlowCredentials()
               log.info('Ecoflow MQTT broker is connected.');
               mqttSetMainHandlers();
             } catch (error) {
-              logError(`Ecoflow MQTT broker connection error: ${error}`);
+              log.error(`Ecoflow MQTT broker connection error: ${error}`);
               gracefulExit();
             }
           })
           .catch((error) => {
-            logError(`Ecoflow certification error: ${error}`);
+            log.error(`Ecoflow certification error: ${error}`);
             gracefulExit();
           });
       })
       .catch((error) => {
-        logError(`Error: ${error}`);
+        log.error(`Error: ${error}`);
         gracefulExit();
       });
   })
   .catch((error) => {
-    logError(`Error: ${error}`);
+    log.error(`Error: ${error}`);
     gracefulExit();
   });
