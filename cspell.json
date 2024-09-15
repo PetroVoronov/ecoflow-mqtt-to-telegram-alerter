@@ -18,7 +18,8 @@
         "preversion",
         "sonarjs",
         "uuidv",
-        "Voronov"
+        "Voronov",
+        "whatwg-url"
     ],
     "ignoreWords": [],
     "import": []

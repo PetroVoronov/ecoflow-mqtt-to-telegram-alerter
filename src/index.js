@@ -1,5 +1,5 @@
 const {Api, TelegramClient} = require('telegram');
-const {Telegraf} = require('telegraf');
+const {Api: GrammyApi} = require('grammy');
 const {StoreSession} = require('telegram/sessions');
 const readline = require('node:readline/promises');
 const {stdin: input, stdout: output, exit} = require('node:process');
@@ -117,7 +117,7 @@ let parseMode = 'html';
 const ecoflowAPIURL = 'https://api.ecoflow.com';
 const ecoflowAPIAuthenticationPath = '/auth/login';
 const ecoflowAPICertificationPath = '/iot-auth/app/certification';
-const headers = { lang: 'en_US', 'content-type': 'application/json' };
+const headers = {lang: 'en_US', 'content-type': 'application/json'};
 const ecoflowAPI = axios.create({
   baseURL: ecoflowAPIURL,
   timeout: 10000,
@@ -361,7 +361,7 @@ function getTelegramClient() {
       }
       getBotAuthToken()
         .then((token) => {
-          const client = new Telegraf(token);
+          const client = new GrammyApi(token);
           resolve(client);
         })
         .catch((error) => {
@@ -411,7 +411,7 @@ function telegramUserSessionMigrate() {
 function getTelegramTargetEntity() {
   return new Promise((resolve, reject) => {
     if (options.asUser === false) {
-      telegramClient.telegram
+      telegramClient
         .getChat(telegramChatId)
         .then((entity) => {
           targetTitle = entity.title || `${entity.first_name || ''} ${entity.last_name || ''} (${entity.username || ''})`;
@@ -514,6 +514,79 @@ function getTelegramPrepared() {
   });
 }
 
+function telegramSendMessage(target, messages, messageOptions) {
+  return new Promise((resolve, reject) => {
+    if (telegramClient !== null) {
+      telegramClient
+        .sendMessage(target, messages, messageOptions)
+        .then((message) => {
+          resolve(options.asUser === true ? message.id : message.message_id);
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    } else {
+      reject(new Error('Telegram client is not ready!'));
+    }
+  });
+}
+
+function telegramPinMessage(target, messageId) {
+  return new Promise((resolve, reject) => {
+    if (telegramClient !== null) {
+      if (options.asUser === true) {
+        telegramClient
+          .pinMessage(target, messageId)
+          .then(() => {
+            resolve();
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      } else {
+        telegramClient
+          .pinChatMessage(target, messageId)
+          .then(() => {
+            resolve();
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      }
+    } else {
+      reject(new Error('Telegram client is not ready!'));
+    }
+  });
+}
+
+function telegramUnpinMessage(target, messageId) {
+  return new Promise((resolve, reject) => {
+    if (telegramClient !== null) {
+      if (options.asUser === true) {
+        telegramClient
+          .unpinMessage(target, messageId)
+          .then(() => {
+            resolve();
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      } else {
+        telegramClient
+          .unpinChatMessage(target, messageId)
+          .then(() => {
+            resolve();
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      }
+    } else {
+      reject(new Error('Telegram client is not ready!'));
+    }
+  });
+}
+
 function telegramMessageOnChange(currentInputState) {
   const inputACConnectionState = cache.getItem('inputACConnectionState');
   if (currentInputState !== inputACConnectionState && telegramClient !== null) {
@@ -526,76 +599,55 @@ function telegramMessageOnChange(currentInputState) {
         (options.addTimestamp ? timeStamp + ': ' : '') + i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off');
 
     log.info(`${messageText}`);
+    let telegramMessage;
+    let telegramTarget;
+    let messageOptions;
     if (options.asUser === true) {
-      const telegramMessage = {
+      telegramMessage = {
         message: messageText,
       };
       if (telegramTopicId > 0) {
         telegramMessage.replyTo = telegramTopicId;
       }
-      telegramClient
-        .sendMessage(targetEntity, telegramMessage)
-        .then((message) => {
-          log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
-          const previousMessageId = cache.getItem('lastMessageId');
-          cache.setItem('lastMessageId', message.message_id);
-          if (options.pinMessage) {
-            telegramClient
-              .pinMessage(targetEntity, message.id)
-              .then(() => {
-                log.debug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
-                if (options.unpinPrevious) {
-                  if (previousMessageId !== undefined) {
-                    telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
-                      log.debug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
-                    });
-                  }
-                }
-              })
-              .catch((error) => {
-                log.error(`Telegram message pin error: ${error}`);
-              });
-          }
-          cache.setItem('lastMessageId', message.id);
-        })
-        .catch((error) => {
-          log.error(`Telegram message error: ${error}`);
-        });
+      telegramTarget = targetEntity;
     } else {
-      const messageOptions = {
+      telegramMessage = messageText;
+      telegramTarget = telegramChatId;
+      messageOptions = {
         parse_mode: parseMode,
       };
       if (telegramTopicId > 0) {
         messageOptions.message_thread_id = telegramTopicId;
       }
-      telegramClient.telegram
-        .sendMessage(telegramChatId, messageText, messageOptions)
-        .then((message) => {
-          log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
-          const previousMessageId = cache.getItem('lastMessageId');
-          cache.setItem('lastMessageId', message.message_id);
-          if (options.pinMessage) {
-            telegramClient.telegram
-              .pinChatMessage(telegramChatId, message.message_id)
-              .then(() => {
-                log.debug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
-                if (options.unpinPrevious) {
-                  if (previousMessageId !== undefined) {
-                    telegramClient.telegram.unpinChatMessage(targetTitle, previousMessageId).then(() => {
-                      log.debug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
-                    });
-                  }
-                }
-              })
-              .catch((error) => {
-                log.error(`Telegram message pin error: ${error}`);
-              });
-          }
-        })
-        .catch((error) => {
-          log.error(`Telegram message error: ${error}`);
-        });
     }
+    telegramSendMessage(telegramTarget, telegramMessage, messageOptions)
+      .then((messageId) => {
+        log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
+        const previousMessageId = cache.getItem('lastMessageId');
+        cache.setItem('lastMessageId', messageId);
+        if (options.pinMessage) {
+          telegramPinMessage(telegramTarget, messageId)
+            .then(() => {
+              log.debug(`Telegram message with id: ${messageId} pinned to "${targetTitle}" with topic ${telegramTopicId}`);
+              if (options.unpinPrevious) {
+                if (previousMessageId !== undefined && previousMessageId !== null) {
+                  telegramUnpinMessage(telegramTarget, previousMessageId).then(() => {
+                    log.debug(`Telegram message with id: ${previousMessageId} unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
+                  })
+                  .catch((error) => {
+                    log.error(`Telegram message unpin error: ${error}`);
+                  });
+                }
+              }
+            })
+            .catch((error) => {
+              log.error(`Telegram message pin error: ${error}`);
+            });
+        }
+      })
+      .catch((error) => {
+        log.error(`Telegram message error: ${error}`);
+      });
     cache.setItem('inputACConnectionState', currentInputState);
   }
 }
@@ -677,14 +729,6 @@ function mqttSubscribe() {
       gracefulExit();
     } else {
       log.info(`Ecoflow MQTT subscription is successful. Connecting to Telegram ...`);
-      getTelegramPrepared()
-        .then(() => {
-          log.info('Telegram is prepared. Ready to receive MQTT messages!');
-        })
-        .catch((error) => {
-          log.error(`Telegram is not ready: ${error}`);
-          gracefulExit();
-        });
       mqttKeepAliveInit();
     }
   });
@@ -740,81 +784,89 @@ function gracefulExit() {
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
-getEcoFlowCredentials()
-  .then(({ecoflowUserName, ecoflowPassword, ecoflowDeviceSN}) => {
-    ecoflowAPI
-      .post(
-        ecoflowAPIAuthenticationPath,
-        {
-          email: ecoflowUserName,
-          password: Buffer.from(ecoflowPassword).toString('base64'),
-          scene: 'IOT_APP',
-          userType: 'ECOFLOW',
-        },
-        {headers: headers},
-      )
-      .then((response) => {
-        log.info('Ecoflow authentication is successful. Getting certification ...');
-        let token, userId, userName;
-        try {
-          token = response.data.data.token;
-          userId = response.data.data.user.userId;
-          userName = response.data.data.user.name;
-        } catch (error) {
-          throw new Error(`Failed to extract key ${error.message} from response: ${stringify(response)}`);
-        }
-        log.debug(`Ecoflow ` , {token});
-        log.debug(`Ecoflow ` , {userId});
-        log.debug(`Ecoflow ` , {userName});
-        const headers = {
-          lang: 'en_US',
-          authorization: `Bearer ${token}`,
-        };
+getTelegramPrepared()
+  .then(() => {
+    log.info('Telegram is prepared. Ready to receive MQTT messages!');
+    getEcoFlowCredentials()
+      .then(({ecoflowUserName, ecoflowPassword, ecoflowDeviceSN}) => {
         ecoflowAPI
-          .get(`${ecoflowAPICertificationPath}?userId=${userId}`, {headers: headers})
+          .post(
+            ecoflowAPIAuthenticationPath,
+            {
+              email: ecoflowUserName,
+              password: Buffer.from(ecoflowPassword).toString('base64'),
+              scene: 'IOT_APP',
+              userType: 'ECOFLOW',
+            },
+            {headers: headers},
+          )
           .then((response) => {
-            log.info('Ecoflow certification is successful. Getting MQTT client ...');
-            let mqttUrl, mqttPort, mqttProtocol, mqttUsername, mqttPassword, mqttClientId;
+            log.info('Ecoflow authentication is successful. Getting certification ...');
+            let token, userId, userName;
             try {
-              mqttUrl = response.data.data.url;
-              mqttPort = parseInt(response.data.data.port, 10); // Ensure port is an integer
-              mqttProtocol = response.data.data.protocol;
-              mqttUsername = response.data.data.certificateAccount;
-              mqttPassword = response.data.data.certificatePassword;
-              // Generate a unique MQTT client ID
-              mqttClientId = `ANDROID_${uuidv4().toUpperCase()}_${userId}`;
+              token = response.data.data.token;
+              userId = response.data.data.user.userId;
+              userName = response.data.data.user.name;
             } catch (error) {
               throw new Error(`Failed to extract key ${error.message} from response: ${stringify(response)}`);
             }
-            log.debug(`Ecoflow MQTT URL: ${mqttUrl}`);
-            log.debug(`Ecoflow MQTT port: ${mqttPort}`);
-            log.debug(`Ecoflow MQTT protocol: ${mqttProtocol}`);
-            log.debug(`Ecoflow `, {mqttUsername});
-            log.debug(`Ecoflow `, {mqttUsername});
-            log.debug(`Ecoflow `, {mqttClientId});
-
-            const connectMQTTUrl = `${mqttProtocol}://${mqttUrl}:${mqttPort}`;
-            mqttOptions = {
-              clientId: mqttClientId,
-              clean: true,
-              connectTimeout: 4000,
-              username: mqttUsername,
-              password: mqttPassword,
-              reconnectPeriod: 1000,
-              protocol: mqttProtocol,
+            log.debug(`Ecoflow `, {token});
+            log.debug(`Ecoflow `, {userId});
+            log.debug(`Ecoflow `, {userName});
+            const headers = {
+              lang: 'en_US',
+              authorization: `Bearer ${token}`,
             };
-            ecoflowTopic += ecoflowDeviceSN;
-            try {
-              mqttClient = mqtt.connect(connectMQTTUrl, mqttOptions);
-              log.info('Ecoflow MQTT broker is connected.');
-              mqttSetMainHandlers();
-            } catch (error) {
-              log.error(`Ecoflow MQTT broker connection error: ${error}`);
-              gracefulExit();
-            }
+            ecoflowAPI
+              .get(`${ecoflowAPICertificationPath}?userId=${userId}`, {headers: headers})
+              .then((response) => {
+                log.info('Ecoflow certification is successful. Getting MQTT client ...');
+                let mqttUrl, mqttPort, mqttProtocol, mqttUsername, mqttPassword, mqttClientId;
+                try {
+                  mqttUrl = response.data.data.url;
+                  mqttPort = parseInt(response.data.data.port, 10); // Ensure port is an integer
+                  mqttProtocol = response.data.data.protocol;
+                  mqttUsername = response.data.data.certificateAccount;
+                  mqttPassword = response.data.data.certificatePassword;
+                  // Generate a unique MQTT client ID
+                  mqttClientId = `ANDROID_${uuidv4().toUpperCase()}_${userId}`;
+                } catch (error) {
+                  throw new Error(`Failed to extract key ${error.message} from response: ${stringify(response)}`);
+                }
+                log.debug(`Ecoflow MQTT URL: ${mqttUrl}`);
+                log.debug(`Ecoflow MQTT port: ${mqttPort}`);
+                log.debug(`Ecoflow MQTT protocol: ${mqttProtocol}`);
+                log.debug(`Ecoflow `, {mqttUsername});
+                log.debug(`Ecoflow `, {mqttUsername});
+                log.debug(`Ecoflow `, {mqttClientId});
+
+                const connectMQTTUrl = `${mqttProtocol}://${mqttUrl}:${mqttPort}`;
+                mqttOptions = {
+                  clientId: mqttClientId,
+                  clean: true,
+                  connectTimeout: 4000,
+                  username: mqttUsername,
+                  password: mqttPassword,
+                  reconnectPeriod: 1000,
+                  protocol: mqttProtocol,
+                };
+                ecoflowTopic += ecoflowDeviceSN;
+                try {
+                  mqttClient = mqtt.connect(connectMQTTUrl, mqttOptions);
+                  log.info('Ecoflow MQTT broker is connected.');
+                  mqttSetMainHandlers();
+                } catch (error) {
+                  log.error(`Ecoflow MQTT broker connection error: ${error}`);
+                  gracefulExit();
+                }
+              })
+              .catch((error) => {
+                log.error(`Ecoflow certification error: ${error}`);
+                gracefulExit();
+              });
           })
           .catch((error) => {
-            log.error(`Ecoflow certification error: ${error}`);
+            log.error(`Error: ${error}`);
             gracefulExit();
           });
       })
@@ -824,6 +876,6 @@ getEcoFlowCredentials()
       });
   })
   .catch((error) => {
-    log.error(`Error: ${error}`);
+    log.error(`Telegram is not ready: ${error}`);
     gracefulExit();
   });
