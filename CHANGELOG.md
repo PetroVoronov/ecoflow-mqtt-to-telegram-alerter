@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.9](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.2.8...v1.2.9) (2024-09-15)
+
+
+### Continuous Integration
+
+* Update version.js ([59e424f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/59e424fe9cfa05ea48bd77efbb686741b2b642dd))
+
+
+### Miscellaneous Chores
+
+* Remove unused `genversion` dependencies and scripts ([abbbcc7](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/abbbcc7edf65bb4a9fed7fbc83cef921d8cc084b))
+
 ## [1.2.8](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.2.7...v1.2.8) (2024-09-15)
 
 
