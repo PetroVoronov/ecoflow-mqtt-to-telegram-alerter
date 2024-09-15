@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.8](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.2.7...v1.2.8) (2024-09-15)
+
+
+### Continuous Integration
+
+* Update release-please-config.json to process src/version.js ([ba6989f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/ba6989fe8423819452e7624530c3ae560ba73d76))
+
+
+### Documentation
+
+* Update README files with release badges ([9293bce](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/9293bce934d87f49b4b2c50907a9730edea6cff7))
+
 ## [1.2.7](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.2.6...v1.2.7) (2024-09-14)
 
 
