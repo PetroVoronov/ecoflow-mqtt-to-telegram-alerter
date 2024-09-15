@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.0](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.2.9...v1.3.0) (2024-09-15)
+
+
+### Features
+
+* Replace `telegraf` with `grammy` ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
+
+
+### Bug Fixes
+
+* Added overrides for `whatwg-url` to version 14.0.0, to get rid of "DeprecationWarning: The `punycode` module is deprecated." ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
+* **cache:** Fixed reading and writing the `null` or `undefined` values in `Cache` module ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
+
+
+### Code Refactoring
+
+* Reorder processing `Telegram` and `Ecoflow MQTT` preparation and connection to avoid impossibility to send message to "unprepared" `Telegram`. ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
+* **telegram:** Code to interact with `Telegram` is rewritten, to make it more unified, independently from mode (user or bot) ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
+
 ## [1.2.9](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.2.8...v1.2.9) (2024-09-15)
 
 
