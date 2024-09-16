@@ -17,13 +17,6 @@ const fs = require('node:fs');
 
 const options = yargs
   .usage('Usage: $0 [options]')
-  .option('l', {
-    alias: 'language',
-    describe: 'Language code for i18n',
-    type: 'string',
-    default: 'en',
-    demandOption: false,
-  })
   .option('as-user', {
     describe: 'Start as user instance (bot instance by default)',
     type: 'boolean',
@@ -41,6 +34,13 @@ const options = yargs
     describe: 'Log the mqtt client alive status every Y minutes',
     type: 'number',
     default: 0,
+    demandOption: false,
+  })
+  .option('l', {
+    alias: 'language',
+    describe: 'Language code for i18n',
+    type: 'string',
+    default: 'en',
     demandOption: false,
   })
   .option('p', {
@@ -69,6 +69,13 @@ const options = yargs
     describe: 'Time zone for timestamp',
     type: 'string',
     default: process.env.TZ || '',
+    demandOption: false,
+  })
+  .option('n', {
+    alias: 'night-time',
+    describe: 'Interval in hours, when the script is sending messages in silent mode. Format is "start:stop" in 24h format',
+    type: 'string',
+    default: '',
     demandOption: false,
   })
   .option('d', {
@@ -136,6 +143,27 @@ let ecoflowTopic = '/app/device/property/';
 let telegramClient = null;
 let lastMQTTMessageTimeStamp = new Date().getTime();
 let lastAliveInfoMessageTimeStamp = new Date().getTime();
+
+// eslint-disable-next-line sonarjs/concise-regex
+const nightTimeRegexp = /^([01]?[0-9]|2[0-3]):([01]?[0-9]|2[0-3])$/;
+const nightTimeInterval = [];
+
+if (typeof options.nightTime === 'string' && options.nightTime.length > 0) {
+  const intervalMatch = options.nightTime.match(nightTimeRegexp);
+  if (intervalMatch !== null) {
+    nightTimeInterval.push(parseInt(intervalMatch[1]), parseInt(intervalMatch[2]));
+  }
+}
+
+log.info(`Language: ${options.language}`);
+log.info(`As user: ${options.asUser}`);
+log.info(`Keep alive interval: ${options.keepAlive} seconds`);
+log.info(`Log alive status interval: ${options.logAliveStatusInterval} minutes`);
+log.info(`Pin message: ${options.pinMessage}`);
+log.info(`Unpin previous: ${options.unpinPrevious}`);
+log.info(`Add timestamp: ${options.addTimestamp}`);
+log.info(`Time zone: ${options.timeZone}`);
+log.info(`Night time interval: ${nightTimeInterval.length === 2 ? options.nightTime : 'not set'}`);
 
 function getEcoFlowCredentials() {
   return new Promise((resolve, reject) => {
@@ -594,9 +622,18 @@ function telegramMessageOnChange(currentInputState) {
     if (options.timeZone) {
       timeStampOptions.timeZone = options.timeZone;
     }
-    const timeStamp = new Date().toLocaleString(options.language, timeStampOptions),
-      messageText =
-        (options.addTimestamp ? timeStamp + ': ' : '') + i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off');
+    const timeStamp = new Date().toLocaleString(options.language, timeStampOptions);
+    const messageText =
+      (options.addTimestamp ? timeStamp + ': ' : '') + i18n.__(currentInputState ? 'Electricity is returned' : 'Electricity is cut off');
+
+    const currentHour = options.timeZone
+      ? new Date().toLocaleString(options.language, {timeZone: options.timeZone, hour: 'numeric', hour12: false})
+      : new Date().getHours();
+
+    const silentMode =
+      nightTimeInterval.length === 2 &&
+      ((nightTimeInterval[1] > nightTimeInterval[0] && currentHour >= nightTimeInterval[0] && currentHour < nightTimeInterval[1]) ||
+        (nightTimeInterval[1] < nightTimeInterval[0] && (currentHour >= nightTimeInterval[0] || currentHour < nightTimeInterval[1])));
 
     log.info(`${messageText}`);
     let telegramMessage;
@@ -609,6 +646,9 @@ function telegramMessageOnChange(currentInputState) {
       if (telegramTopicId > 0) {
         telegramMessage.replyTo = telegramTopicId;
       }
+      if (silentMode === true) {
+        telegramMessage.silent = true;
+      }
       telegramTarget = targetEntity;
     } else {
       telegramMessage = messageText;
@@ -618,6 +658,9 @@ function telegramMessageOnChange(currentInputState) {
       };
       if (telegramTopicId > 0) {
         messageOptions.message_thread_id = telegramTopicId;
+      }
+      if (silentMode === true) {
+        messageOptions.disable_notification = true;
       }
     }
     telegramSendMessage(telegramTarget, telegramMessage, messageOptions)
@@ -631,12 +674,15 @@ function telegramMessageOnChange(currentInputState) {
               log.debug(`Telegram message with id: ${messageId} pinned to "${targetTitle}" with topic ${telegramTopicId}`);
               if (options.unpinPrevious) {
                 if (previousMessageId !== undefined && previousMessageId !== null) {
-                  telegramUnpinMessage(telegramTarget, previousMessageId).then(() => {
-                    log.debug(`Telegram message with id: ${previousMessageId} unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
-                  })
-                  .catch((error) => {
-                    log.error(`Telegram message unpin error: ${error}`);
-                  });
+                  telegramUnpinMessage(telegramTarget, previousMessageId)
+                    .then(() => {
+                      log.debug(
+                        `Telegram message with id: ${previousMessageId} unpinned from "${targetTitle}" with topic ${telegramTopicId}`,
+                      );
+                    })
+                    .catch((error) => {
+                      log.error(`Telegram message unpin error: ${error}`);
+                    });
                 }
               }
             })
@@ -728,7 +774,7 @@ function mqttSubscribe() {
       log.error(`Ecoflow MQTT subscription error: ${error}`);
       gracefulExit();
     } else {
-      log.info(`Ecoflow MQTT subscription is successful. Connecting to Telegram ...`);
+      log.info(`Ecoflow MQTT subscription is successful. Ready to process ...`);
       mqttKeepAliveInit();
     }
   });

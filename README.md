@@ -53,8 +53,9 @@ docker pull petrovoronov/ecoflow-mqtt-to-telegram-alerter
         git clone https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter.git
         cd ecoflow-mqtt-to-telegram-alerter
         ```
+   2. Or download the desired release from the [releases page](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/releases) and unpack it.
 
-   2. Install dependencies:
+   3. Install dependencies:
         ```sh
         npm install
         ```
@@ -93,16 +94,17 @@ So you will be asked to enter the parameters only once (or you should pass it as
 
 The application can be configured using the following command-line options:
 
-| Option                        | Alias | Description | Type | Default | Required |
+| Option                        | Short | Description | Type | Default | Required |
 |-------------------------------|-------|-------------|------|---------|----------|
-| `-l, --language`              | `-l`  | Language code for i18n | String  | `en` | No  |
-| `-b, --as-user`               |       | Start as user instance (bot instance by default)  | Boolean | | No  |
-| `-k, --keep-alive`            | `-k`  | Check if the MQTT client is alive every X seconds  | Number  | `60` | No  |
+| `--as-user`                   |       | Start as user instance (bot instance by default)  | Boolean | | No  |
+| `--keep-alive`                | `-k`  | Check if the MQTT client is alive every X seconds  | Number  | `60` | No  |
 | `--log-alive-status-interval` |       | Log the MQTT client alive status every Y minutes   | Number  | `0` | No  |
-| `-p, --pin-message`           | `-p`  | Unpin message from chat   | Boolean | `false` | No  |
-| `-u, --unpin-previous`        | `-u`  | Pin message to chat  | Boolean | `false` | No  |
-| `-t, --add-timestamp`         | `-t`  | Add timestamp to message  | Boolean | `false` | No  |
-| `-tz, --time-zone`            | `-tz` | Time zone for timestamp   | String  | Value of `TZ` environment variable or empty string | No  |
+| `--language`                  | `-l`  | Language code for i18n | String  | `en` | No  |
+| `--pin-message`               | `-p`  | Unpin message from chat   | Boolean | `false` | No  |
+| `--unpin-previous`            | `-u`  | Pin message to chat  | Boolean | `false` | No  |
+| `--add-timestamp`             | `-t`  | Add timestamp to message  | Boolean | `false` | No  |
+| `--tz`, `--time-zone`         |       | Time zone for timestamp   | String  | Value of `TZ` environment variable or empty string | No  |
+| `--night-time`                | `-n`  | Interval in hours, when the script is sending messages in silent mode. Format is "start:stop" in 24h format   | String | Empty string | No  |
 | `-d, --debug`                 | `-d`  | Debug level of logging | String  | | No  |
 
 ## Running the Application
