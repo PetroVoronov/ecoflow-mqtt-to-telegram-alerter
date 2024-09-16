@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.4.0](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.3.0...v1.4.0) (2024-09-16)
+
+
+### Miscellaneous Chores
+
+* Additional logging of command-line options on start ([4630503](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/4630503aa51f83209e166c176449f4709157063a))
+
+
+### Features
+
+* New option: `nightTime` - Interval in hours, when the script is sending messages in silent mode. Format is "start:stop" in 24h format ([4630503](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/4630503aa51f83209e166c176449f4709157063a))
+
+
+### Bug Fixes
+
+* Debug log improvement ([4630503](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/4630503aa51f83209e166c176449f4709157063a))
+
 ## [1.3.0](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.2.9...v1.3.0) (2024-09-15)
 
 
