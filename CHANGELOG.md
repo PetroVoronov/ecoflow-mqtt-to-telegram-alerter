@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.4.1](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.4.0...v1.4.1) (2024-09-27)
+
+
+### Continuous Integration
+
+* Update repo description in deploy_docker_on_tag.yml ([3135f58](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/3135f587f270ef32dcf7fa629ce2979adcbf6755))
+
+
+### Documentation
+
+* Make CHANGELOG.md full of changes ([48d18e1](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/48d18e12d2cec99ecdde2e2f9e420c95ab5fa33b))
+
+
+### Code Refactoring
+
+* Refactor logging statements in Cache.js ([bbe5932](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/bbe5932a63c9afcf1038f4e5c846981f08f66a3d))
+
 ## [1.4.0](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.3.0...v1.4.0) (2024-09-16)
 
 
