@@ -96,6 +96,7 @@ The application can be configured using the following command-line options:
 
 | Option                        | Short | Description | Type | Default | Required |
 |-------------------------------|-------|-------------|------|---------|----------|
+| `--api-url`                   | `-a`  | URL of the Ecoflow API | String  | `https://api.ecoflow.com` | No  |
 | `--as-user`                   |       | Start as user instance (bot instance by default)  | Boolean | | No  |
 | `--keep-alive`                | `-k`  | Check if the MQTT client is alive every X seconds  | Number  | `60` | No  |
 | `--log-alive-status-interval` |       | Log the MQTT client alive status every Y minutes   | Number  | `0` | No  |

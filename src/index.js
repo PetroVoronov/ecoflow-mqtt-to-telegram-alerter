@@ -15,8 +15,17 @@ const {v4: uuidv4} = require('uuid');
 const mqtt = require('mqtt');
 const fs = require('node:fs');
 
+const ecoflowAPIURLDefault = 'https://api.ecoflow.com';
+
 const options = yargs
   .usage('Usage: $0 [options]')
+  .option('a', {
+    alias: 'api-url',
+    describe: 'Ecoflow API URL',
+    type: 'string',
+    default: ecoflowAPIURLDefault,
+    demandOption: false,
+  })
   .option('as-user', {
     describe: 'Start as user instance (bot instance by default)',
     type: 'boolean',
@@ -121,7 +130,7 @@ let targetEntity = null;
 let targetTitle = '';
 let parseMode = 'html';
 
-const ecoflowAPIURL = 'https://api.ecoflow.com';
+const ecoflowAPIURL = options.apiUrl || ecoflowAPIURLDefault;
 const ecoflowAPIAuthenticationPath = '/auth/login';
 const ecoflowAPICertificationPath = '/iot-auth/app/certification';
 const headers = {lang: 'en_US', 'content-type': 'application/json'};
@@ -155,10 +164,11 @@ if (typeof options.nightTime === 'string' && options.nightTime.length > 0) {
   }
 }
 
-log.info(`Language: ${options.language}`);
+log.info(`Ecoflow API URL: ${ecoflowAPIURL}`);
 log.info(`As user: ${options.asUser}`);
 log.info(`Keep alive interval: ${options.keepAlive} seconds`);
 log.info(`Log alive status interval: ${options.logAliveStatusInterval} minutes`);
+log.info(`Language: ${options.language}`);
 log.info(`Pin message: ${options.pinMessage}`);
 log.info(`Unpin previous: ${options.unpinPrevious}`);
 log.info(`Add timestamp: ${options.addTimestamp}`);
