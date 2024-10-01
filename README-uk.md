@@ -142,7 +142,7 @@ node index.js --language en --as-user --keep-alive 30 --log-alive-status-interva
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
-        node src/index.js --as-user
+        --as-user
     ```
 
 - для роботи як користувач Telegram і налаштування всіх основних параметрів конфігурації через змінні середовища (але інтерактивний режим все ще потрібен):
@@ -157,13 +157,12 @@ node index.js --language en --as-user --keep-alive 30 --log-alive-status-interva
         -e TELEGRAM_API_HASH=your_telegram_api_hash \
         -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
         -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
-        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
-        node src/index.js --as-user
+        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
     ```
 
 - для роботи як бот Telegram і налаштування всіх основних параметрів конфігурації в інтерактивному режимі:
     ```sh
-    docker run -it -d --name ecoflow-mqtt-to-telegram-alerter \
+    docker run -it --name ecoflow-mqtt-to-telegram-alerter \
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
@@ -175,7 +174,7 @@ node index.js --language en --as-user --keep-alive 30 --log-alive-status-interva
 
 Інтерактивний режим для роботи як бот Telegram не потрібен. Тому перший запуск повинен бути таким:
 ```sh
-docker run -d --name ecoflow-mqtt-to-telegram-alerter \
+docker run -it --name ecoflow-mqtt-to-telegram-alerter \
     -v /path/to/your/data:/app/data \
     -v /path/to/your/locales:/app/locales \
     -e ECOFLOW_USERNAME=your_ecoflow_username \
