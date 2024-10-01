@@ -144,7 +144,7 @@ So, the first run should be like one of the following:
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
-        node src/index.js --as-user
+        --as-user
     ```
 
 - to work as telegram user and set all basic configuration parameters as environment variables (but interactive mode still required):
@@ -160,12 +160,12 @@ So, the first run should be like one of the following:
         -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
         -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
         petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest \
-        node src/index.js --as-user
+        --as-user
     ```
 
 - to work as telegram bot and set all basic configuration parameters interactively:
     ```sh
-    docker run -it -d --name ecoflow-mqtt-to-telegram-alerter \
+    docker run -it --name ecoflow-mqtt-to-telegram-alerter \
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
@@ -177,7 +177,7 @@ After the first run the application will store the configuration parameters and 
 
 There is no interactive mode for the telegram bot instance is needed. So, the first run should be like one of the following:
 ```sh
-docker run -d --name ecoflow-mqtt-to-telegram-alerter \
+docker run -it --name ecoflow-mqtt-to-telegram-alerter \
     -v /path/to/your/data:/app/data \
     -v /path/to/your/locales:/app/locales \
     -e ECOFLOW_USERNAME=your_ecoflow_username \
@@ -229,7 +229,7 @@ services:
             - TELEGRAM_API_HASH=your_telegram_api_hash
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
-        command: node src/index.js --as-user
+        command: --as-user
 ```
 
 ### In case of working as telegram bot:
@@ -249,7 +249,6 @@ services:
             - TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
-        command: node src/index.js
 ```
 
 Replace `/path/to/your/data` and `/path/to/your/locales` with the actual paths on your system where you want to store the application data and localization files.
