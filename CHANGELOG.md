@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.5.1](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.0...v1.5.1) (2024-10-01)
+
+
+### Continuous Integration
+
+* Update package-lock.json ([89f2433](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/89f24337d19bc5657caed5fc26419506acad3052))
+
+
+### Documentation
+
+* **docker:** Refactor run chapter in README-uk.md ([89f2433](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/89f24337d19bc5657caed5fc26419506acad3052))
+* Update command-line options in README's ([449a92f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/449a92fa5f4ebb85d03d71b22554c81ce9eb8435))
+
+
+### Code Refactoring
+
+* Add new command-line option for Ecoflow API URL ([449a92f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/449a92fa5f4ebb85d03d71b22554c81ce9eb8435))
+
 ## [1.5.0](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.4.1...v1.5.0) (2024-10-01)
 
 
