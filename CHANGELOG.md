@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.5.0](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.4.1...v1.5.0) (2024-10-01)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump eslint-plugin-sonarjs from 2.0.2 to 2.0.3 ([b43a5bd](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/b43a5bde5bd1bc68dc158762e8cc563b5a29d1bd))
+* **deps:** Bump telegram from 2.24.11 to 2.25.11 ([b7a426f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/b7a426f71b6460f987e32184565a3a951ece48b7))
+
+
+### Documentation
+
+* **docker:** Refactor run chapter ([25f01aa](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/25f01aacb2ed36c52b828f1986c64971dd816811))
+
+
+### Features
+
+* **docker:** Refactor Dockerfile to use ENTRYPOINT and empty CMD instruction, to have possibility to use command-line options of application directly with docker start ([25f01aa](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/25f01aacb2ed36c52b828f1986c64971dd816811))
+
 ## [1.4.1](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.4.0...v1.4.1) (2024-09-27)
 
 
