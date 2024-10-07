@@ -2,7 +2,6 @@
 
 ## [1.5.3](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.2...v1.5.3) (2024-10-07)
 
-
 ### Code Refactoring
 
 * `readline` replaced by `enquirer` ([ecf9157](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/ecf91579631bda2f7165ec88e59db9701bafa81b))
