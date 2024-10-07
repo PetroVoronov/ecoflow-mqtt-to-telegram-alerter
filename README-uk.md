@@ -34,7 +34,7 @@
 
 ### Отримання ідентифікатора теми в Telegram
 
-Опублікуйте повідомлення в цій темі, потім клацніть правою кнопкою миші на ньому та виберіть «Копіювати посилання на повідомлення». Вставте його у чернетку та зверніть увагу на наступну структуру: https://t.me/c/XXXXXXXXXX/YY/ZZ. Ідентифікатор теми — YY (ціле число).
+Опублікуйте повідомлення в цій темі, потім клацніть правою кнопкою миші на ньому та виберіть «Копіювати посилання на повідомлення». Вставте його у чернетку та зверніть увагу на наступну структуру: ```https://t.me/c/XXXXXXXXXX/YY/ZZ```. Ідентифікатор теми — YY (ціле число).
 
 ## Встановлення
 
@@ -44,41 +44,46 @@
 docker pull petrovoronov/ecoflow-mqtt-to-telegram-alerter
 ```
 
-### Встановлення Node.js з вихідного коду
+### Встановлення під Node.js з вихідного коду
 
 1. Клонуйте репозиторій:
+
     ```sh
     git clone https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter.git
     cd ecoflow-mqtt-to-telegram-alerter
     ```
+
 2. Або завантажте бажану версію зі [сторінки релізів](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/releases) та розпакуйте її.
 
 3. Встановіть залежності:
+
     ```sh
     npm install
     ```
 
 ## Передача базових параметрів конфігурації
+
 Базові параметри конфігурації, включаючи облікові дані Telegram, можуть бути передані як змінні середовища, або ви можете пропустити це, і програма запросить вас ввести їх інтерактивно.
 
-### Змінні середовища у разі роботи як користувач Telegram (за замовчуванням):
-```sh
-export ECOFLOW_USERNAME=your_ecoflow_username
-export ECOFLOW_PASSWORD=your_ecoflow_password
-export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
-export TELEGRAM_API_ID=your_telegram_api_id
-export TELEGRAM_API_HASH=your_telegram_api_hash
-export TELEGRAM_CHAT_ID=your_telegram_chat_id
-export TELEGRAM_TOPIC_ID=your_telegram_topic_id
-```
-
-### Змінні середовища у разі роботи як бот Telegram:
+### Змінні середовища у разі роботи як бот Telegram (за замовчуванням)
 
 ```sh
 export ECOFLOW_USERNAME=your_ecoflow_username
 export ECOFLOW_PASSWORD=your_ecoflow_password
 export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
 export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
+export TELEGRAM_CHAT_ID=your_telegram_chat_id
+export TELEGRAM_TOPIC_ID=your_telegram_topic_id
+```
+
+### Змінні середовища у разі роботи від імені користувача Telegram
+
+```sh
+export ECOFLOW_USERNAME=your_ecoflow_username
+export ECOFLOW_PASSWORD=your_ecoflow_password
+export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
+export TELEGRAM_API_ID=your_telegram_api_id
+export TELEGRAM_API_HASH=your_telegram_api_hash
 export TELEGRAM_CHAT_ID=your_telegram_chat_id
 export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 ```
@@ -125,19 +130,22 @@ node index.js --language en --as-user --keep-alive 30 --log-alive-status-interva
 #### Docker Volumes
 
 **Необхідно змонтувати каталог даних програми в контейнер:**
+
 - `/app/data` - для даних програми, включаючи конфігурації та інші актуальні дані. Обов'язково для монтування!
 Ви можете змонтувати будь-який локальний каталог на хост-системі або об'єм Docker.
 
 Крім того, ви можете змонтувати каталог локалізації в контейнер:
+
 - `/app/locales` - для файлів локалізації, якщо ви хочете використовувати власні повідомлення у Telegram-чаті. Необов'язково для монтування.
 
-#### Перший запуск Docker для роботи як користувач Telegram або як бот Telegram для налаштування всіх основних параметрів конфігурації в інтерактивному режимі
+#### Перший запуск Docker для роботи від імені користувача Telegram
 
 Через специфіку середовища Docker, додаток не зможе запитати відсутні параметри конфігурації в інтерактивному режимі. Тому вам потрібно зробити перший запуск в інтерактивному режимі, щоб надати відсутні параметри.
 
 Отже, перший запуск повинен бути таким:
 
 - для роботи як користувач Telegram і налаштування всіх основних параметрів конфігурації в інтерактивному режимі:
+
     ```sh
     docker run -it --name ecoflow-mqtt-to-telegram-alerter \
         -v /path/to/your/data:/app/data \
@@ -147,6 +155,7 @@ node index.js --language en --as-user --keep-alive 30 --log-alive-status-interva
     ```
 
 - для роботи як користувач Telegram і налаштування всіх основних параметрів конфігурації через змінні середовища (але інтерактивний режим все ще потрібен):
+
     ```sh
     docker run -it --name ecoflow-mqtt-to-telegram-alerter \
         -v /path/to/your/data:/app/data \
@@ -158,24 +167,20 @@ node index.js --language en --as-user --keep-alive 30 --log-alive-status-interva
         -e TELEGRAM_API_HASH=your_telegram_api_hash \
         -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
         -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
-        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
-    ```
-
-- для роботи як бот Telegram і налаштування всіх основних параметрів конфігурації в інтерактивному режимі:
-    ```sh
-    docker run -it --name ecoflow-mqtt-to-telegram-alerter \
-        -v /path/to/your/data:/app/data \
-        -v /path/to/your/locales:/app/locales \
-        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
+        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest\
+        --as-user
     ```
 
 Після першого запуску додаток збереже параметри конфігурації та додаткову інформацію - будь ласка, зупиніть контейнер, натиснувши `Ctrl+C`, і запустіть його знову за допомогою команд з наступного розділу.
 
-#### Перший запуск Docker для роботи як бот Telegram і налаштування всіх основних параметрів конфігурації через змінні середовища
+#### Перший запуск Docker для роботи як бота Telegram
 
-Інтерактивний режим для роботи як бот Telegram не потрібен. Тому перший запуск повинен бути таким:
+Інтерактивний режим для роботи як бот Telegram не потрібен. Але тільки якщо ви передасте всі необхідні параметри конфігурації як змінні середовища під час першого запуску.
+
+Таким чином перший запуск повинен бути таким:
+
 ```sh
-docker run -it --name ecoflow-mqtt-to-telegram-alerter \
+docker run -d --name ecoflow-mqtt-to-telegram-alerter \
     -v /path/to/your/data:/app/data \
     -v /path/to/your/locales:/app/locales \
     -e ECOFLOW_USERNAME=your_ecoflow_username \
@@ -184,6 +189,15 @@ docker run -it --name ecoflow-mqtt-to-telegram-alerter \
     -e TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token \
     -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
     -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
+    petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
+```
+
+Якщо ви не хочете передавати параметри конфігурації як змінні середовища під час першого запуску, ви можете запустити образ Docker в інтерактивному режимі та передати необхідні параметри інтерактивно:
+
+```sh
+docker run -it --name ecoflow-mqtt-to-telegram-alerter \
+    -v /path/to/your/data:/app/data \
+    -v /path/to/your/locales:/app/locales \
     petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
 ```
 
@@ -209,7 +223,7 @@ docker stop ecoflow-mqtt-to-telegram-alerter
 
 Щоб запустити застосунок за допомогою Docker Compose, створіть файл `docker-compose.yml` з наступним вмістом:
 
-### У разі роботи як користувач Telegram:
+### У разі роботи як користувач Telegram
 
 ```yaml
 version: '3'
@@ -230,7 +244,7 @@ services:
         command: node src/index.js --as-user
 ```
 
-### У разі роботи як бот Telegram:
+### У разі роботи як бот Telegram
 
 ```yaml
 version: '3'
@@ -267,19 +281,22 @@ docker-compose up -d
 Ви можете змінити повідомлення, відредагувавши файли локалізації в каталозі `locales`.
 
 ### Додавання нової мови
+
 Ви можете додати нову мову, створивши новий файл локалізації в каталозі `locales` з кодом мови як ім'ям файлу (наприклад, `fr.json` для французької). Потім ви можете додати переклади повідомлень у новий файл.
+
 ```json
 {
     "Electricity is returned": "L'électricité est revenue",
     "Electricity is cut off": "L'électricité est coupée"
 }
 ```
+
 Потім ви можете передати код мови як значення опції командного рядка `--language`, щоб використовувати нову мову.
 
 ### Файли локалізації для Docker
+
 У разі використання Docker ви можете зв'язати каталог `locales` з контейнером, щоб використовувати власні файли локалізації для повідомлень у чаті Telegram.
 Але в цьому випадку після першого запуску ви матимете лише **порожні файли** у відповідному каталозі `locales` на хост-системі. Потім ви можете відредагувати/додати потрібні файли локалізації в каталог `locales` у хост-системі та перезапустити контейнер.
-
 
 ## Ліцензія
 

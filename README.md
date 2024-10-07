@@ -36,7 +36,7 @@ Additionally, you can use this bot to obtain the chat ID of a group or channel b
 
 ### Obtaining the Telegram Topic ID
 
-Post a message to that topic, then right-click on it and select Copy Message Link . Paste it on a scratchpad and notice that it has the following structure https://t.me/c/XXXXXXXXXX/YY/ZZ . The topic ID is YY (integer).
+Post a message to that topic, then right-click on it and select Copy Message Link . Paste it on a scratchpad and notice that it has the following structure ```https://t.me/c/XXXXXXXXXX/YY/ZZ```. The topic ID is YY (integer).
 
 ## Installation
 
@@ -49,38 +49,43 @@ docker pull petrovoronov/ecoflow-mqtt-to-telegram-alerter
 ### Node.js installation from the source code
 
    1. Clone the repository:
+
         ```sh
         git clone https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter.git
         cd ecoflow-mqtt-to-telegram-alerter
         ```
+
    2. Or download the desired release from the [releases page](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/releases) and unpack it.
 
    3. Install dependencies:
+
         ```sh
         npm install
         ```
 
 ## Passing the basic configuration parameters
+
 Basic configuration parameters, including Telegram credentials can be passed as environment variables, or you can skip it and application will ask you to enter it interactively.
 
-### Environment variables in case of working as telegram user (default):
-```sh
-export ECOFLOW_USERNAME=your_ecoflow_username
-export ECOFLOW_PASSWORD=your_ecoflow_password
-export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
-export TELEGRAM_API_ID=your_telegram_api_id
-export TELEGRAM_API_HASH=your_telegram_api_hash
-export TELEGRAM_CHAT_ID=your_telegram_chat_id
-export TELEGRAM_TOPIC_ID=your_telegram_topic_id
-```
-
-### Environment variables in  case of working as telegram bot:
+### Environment variables in  case of working as telegram bot (default)
 
 ```sh
 export ECOFLOW_USERNAME=your_ecoflow_username
 export ECOFLOW_PASSWORD=your_ecoflow_password
 export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
 export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
+export TELEGRAM_CHAT_ID=your_telegram_chat_id
+export TELEGRAM_TOPIC_ID=your_telegram_topic_id
+```
+
+### Environment variables in case of working as telegram user
+
+```sh
+export ECOFLOW_USERNAME=your_ecoflow_username
+export ECOFLOW_PASSWORD=your_ecoflow_password
+export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
+export TELEGRAM_API_ID=your_telegram_api_id
+export TELEGRAM_API_HASH=your_telegram_api_hash
 export TELEGRAM_CHAT_ID=your_telegram_chat_id
 export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 ```
@@ -127,19 +132,22 @@ Due to the limitations of the Docker environment, the application will not be ab
 #### Docker Volumes
 
 **You must to map the application data directory to the container:**
+
 - `/app/data` - for the application data, including the configurations and the some other actual data. Mandatory for the mapping!
 You can map in on any local directory on the host system or docker volume.
 
 Additionally, you can map the localization directory to the container:
+
 - `/app/locales` - for the localization files, if  you want to use own messages in the telegram chat. Optional for the mapping.
 
-#### Docker first run to work as telegram user or as telegram bot to set all basic configuration parameters interactively
+#### Docker first run to work as Telegram user
 
 Due to the specifics of the Docker environment, the application will not be able to ask for the missing configuration parameters interactively. That's why you need to make a first run in interactive mode to provide the missing parameters.
 
 So, the first run should be like one of the following:
 
 - to work as telegram user and set all basic configuration parameters interactively:
+
     ```sh
     docker run -it --name ecoflow-mqtt-to-telegram-alerter \
         -v /path/to/your/data:/app/data \
@@ -149,6 +157,7 @@ So, the first run should be like one of the following:
     ```
 
 - to work as telegram user and set all basic configuration parameters as environment variables (but interactive mode still required):
+
     ```sh
     docker run -it --name ecoflow-mqtt-to-telegram-alerter \
         -v /path/to/your/data:/app/data \
@@ -164,21 +173,16 @@ So, the first run should be like one of the following:
         --as-user
     ```
 
-- to work as telegram bot and set all basic configuration parameters interactively:
-    ```sh
-    docker run -it --name ecoflow-mqtt-to-telegram-alerter \
-        -v /path/to/your/data:/app/data \
-        -v /path/to/your/locales:/app/locales \
-        petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
-    ```
-
 After the first run the application will store the configuration parameters and additional info - please stop the container by pressing `Ctrl+C` and start it again with the commands from the next section.
 
-#### Docker first run to work as telegram bot and set all basic configuration parameters via environment variables
+#### Docker first run to work as Telegram bot
 
-There is no interactive mode for the telegram bot instance is needed. So, the first run should be like one of the following:
+There is no interactive mode for the telegram bot instance is needed. But only if you will pass all needed configuration parameters as environment variables at the first run.
+
+So, the first run should be like one of the following:
+
 ```sh
-docker run -it --name ecoflow-mqtt-to-telegram-alerter \
+docker run -d --name ecoflow-mqtt-to-telegram-alerter \
     -v /path/to/your/data:/app/data \
     -v /path/to/your/locales:/app/locales \
     -e ECOFLOW_USERNAME=your_ecoflow_username \
@@ -187,6 +191,15 @@ docker run -it --name ecoflow-mqtt-to-telegram-alerter \
     -e TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token \
     -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
     -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
+    petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
+```
+
+In case you don't want to pass the configuration parameters as environment variables at the first run, you can run the docker image in interactive mode and pass the needed parameters interactively:
+
+```sh
+docker run -it --name ecoflow-mqtt-to-telegram-alerter \
+    -v /path/to/your/data:/app/data \
+    -v /path/to/your/locales:/app/locales \
     petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
 ```
 
@@ -212,7 +225,7 @@ docker stop ecoflow-mqtt-to-telegram-alerter
 
 To run the application using Docker Compose, create a `docker-compose.yml` file with the following content:
 
-### In case of working as telegram user:
+### In case of working as telegram user
 
 ```yaml
 version: '3'
@@ -233,7 +246,7 @@ services:
         command: --as-user
 ```
 
-### In case of working as telegram bot:
+### In case of working as telegram bot
 
 ```yaml
 version: '3'
@@ -269,19 +282,22 @@ You can change the language by passing the `--language` command-line option with
 You can change the messages by editing the localization files in the `locales` directory.
 
 ### Adding a New Language
+
 You can add a new language by creating a new localization file in the `locales` directory with the language code as the filename (e.g., `fr.json` for French). And then you can add the translations for the messages in the new file.
+
 ```json
 {
     "Electricity is returned": "L'électricité est revenue",
     "Electricity is cut off": "L'électricité est coupée"
 }
 ```
+
 Then you can pass the language code as the value of the `--language` command-line option to use the new language.
 
 ### Localization Files for Docker
+
 In case of using Docker, you can map the `locales` directory to the container to use the own localization files for the messages in the telegram chat.
 But in this case after first run you will have only the **empty files** in the appropriate `locales` directory in the host system. Then you can edit/add the needed localization files to the `locales` directory in the host system and restart the container.
-
 
 ## License
 
