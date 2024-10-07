@@ -2,11 +2,9 @@
 
 ## [1.5.2](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.1...v1.5.2) (2024-10-07)
 
-
 ### Continuous Integration
 
 * **release-please:** run CHANGELOG.md through markdownlint-cli2 on PR's ([69a5234](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/69a5234693e0f4a98291aa653b3d6eb276d02ecb))
-
 
 ### Miscellaneous Chores
 
@@ -15,7 +13,6 @@
 * **deps-dev:** Bump globals from 15.9.0 to 15.10.0 ([fda3c0e](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/fda3c0e4f8876035d471b97f6c89fd14540d7a57))
 * **deps:** Bump telegram from 2.25.11 to 2.25.15 ([2341bdf](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/2341bdf0dd05687d738f5c8b2b6767b8425fe6a8))
 * **dev:** Add markdownlint-cli2 to improve format of documentation (README's, CHANGELOG) ([69a5234](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/69a5234693e0f4a98291aa653b3d6eb276d02ecb))
-
 
 ### Documentation
 
