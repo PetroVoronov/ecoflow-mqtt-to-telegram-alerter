@@ -1,7 +1,6 @@
 const {Api, TelegramClient} = require('telegram');
 const {Api: GrammyApi} = require('grammy');
 const {StoreSession} = require('telegram/sessions');
-const readline = require('node:readline/promises');
 const {stdin: input, stdout: output, exit} = require('node:process');
 const stringify = require('json-stringify-safe');
 const {LocalStorage} = require('node-localstorage');
@@ -14,6 +13,8 @@ const axios = require('axios');
 const {v4: uuidv4} = require('uuid');
 const mqtt = require('mqtt');
 const fs = require('node:fs');
+const crypto = require('crypto');
+const {Input, Select, Form, prompt} = require('enquirer');
 
 const ecoflowAPIURLDefault = 'https://api.ecoflow.com';
 
@@ -24,6 +25,18 @@ const options = yargs
     describe: 'Ecoflow API URL',
     type: 'string',
     default: ecoflowAPIURLDefault,
+    demandOption: false,
+  })
+  .option('auth-via-access-key', {
+    describe: 'Authenticate to the EcoFlow API via access key',
+    type: 'boolean',
+    default: false,
+    demandOption: false,
+  })
+  .option('auth-via-username', {
+    describe: 'Authenticate to the EcoFlow API via username',
+    type: 'boolean',
+    default: false,
     demandOption: false,
   })
   .option('as-user', {
@@ -104,7 +117,34 @@ if (options.debug) {
 }
 log.appendMaskWord('apiId', 'apiHash', 'DeviceSN', 'ClientId', 'phone');
 
+
+const ecoflowAPIURL = options.apiUrl || ecoflowAPIURLDefault;
+
+// eslint-disable-next-line sonarjs/concise-regex
+const nightTimeRegexp = /^([01]?[0-9]|2[0-3]):([01]?[0-9]|2[0-3])$/;
+const nightTimeInterval = [];
+
+if (typeof options.nightTime === 'string' && options.nightTime.length > 0) {
+  const intervalMatch = options.nightTime.match(nightTimeRegexp);
+  if (intervalMatch !== null) {
+    nightTimeInterval.push(parseInt(intervalMatch[1]), parseInt(intervalMatch[2]));
+  }
+}
+
 log.info(`Starting ${scriptName} v${scriptVersion} ...`);
+log.info(`Ecoflow API URL: ${ecoflowAPIURL}`);
+log.info(`Authenticate via access key: ${options.authViaAccessKey}`);
+log.info(`Authenticate via username: ${options.authViaUsername}`);
+log.info(`Start as user: ${options.asUser}`);
+log.info(`Keep alive interval: ${options.keepAlive} seconds`);
+log.info(`Log alive status interval: ${options.logAliveStatusInterval} minutes`);
+log.info(`Language: ${options.language}`);
+log.info(`Pin message: ${options.pinMessage}`);
+log.info(`Unpin previous: ${options.unpinPrevious}`);
+log.info(`Add timestamp: ${options.addTimestamp}`);
+log.info(`Time zone: ${options.timeZone}`);
+log.info(`Night time interval: ${nightTimeInterval.length === 2 ? options.nightTime : 'not set'}`);
+log.info(`Debug: ${options.debug}`);
 
 i18n.setLocale(options.language);
 
@@ -115,7 +155,9 @@ const storage = new LocalStorage('data/storage'),
     removeItem: (key) => storage.removeItem(key),
   });
 
-if (typeof process.env.TELEGRAM_CHAT_ID === 'string' && process.env.TELEGRAM_CHAT_ID.length > 0) {
+const paramsMinLength = 3;
+
+if (typeof process.env.TELEGRAM_CHAT_ID === 'string' && process.env.TELEGRAM_CHAT_ID.length > paramsMinLength) {
   cache.setItem('telegramChatId', parseInt(process.env.TELEGRAM_CHAT_ID));
 }
 if (typeof process.env.TELEGRAM_TOPIC_ID === 'string' && process.env.TELEGRAM_TOPIC_ID.length > 0) {
@@ -130,9 +172,12 @@ let targetEntity = null;
 let targetTitle = '';
 let parseMode = 'html';
 
-const ecoflowAPIURL = options.apiUrl || ecoflowAPIURLDefault;
 const ecoflowAPIAuthenticationPath = '/auth/login';
-const ecoflowAPICertificationPath = '/iot-auth/app/certification';
+const ecoflowAPIAccessCertificationPath = '/iot-open/sign/certification';
+const ecoflowAPIUserCertificationPath = '/iot-auth/app/certification';
+
+let ecoflowTopic = '/app/device/property/';
+
 const headers = {lang: 'en_US', 'content-type': 'application/json'};
 const ecoflowAPI = axios.create({
   baseURL: ecoflowAPIURL,
@@ -148,192 +193,224 @@ const ecoFlowACInputCurrent = `${ecoFlowACInput}Amp`;
 
 let mqttClient = null;
 let mqttOptions = null;
-let ecoflowTopic = '/app/device/property/';
 let telegramClient = null;
 let lastMQTTMessageTimeStamp = new Date().getTime();
 let lastAliveInfoMessageTimeStamp = new Date().getTime();
 
-// eslint-disable-next-line sonarjs/concise-regex
-const nightTimeRegexp = /^([01]?[0-9]|2[0-3]):([01]?[0-9]|2[0-3])$/;
-const nightTimeInterval = [];
+function ecoflowAPIAccessIsValid(ecoflowAccessKey, ecoflowSecretKey) {
+  return (
+    typeof ecoflowAccessKey === 'string' &&
+    ecoflowAccessKey.length > paramsMinLength &&
+    typeof ecoflowSecretKey === 'string' &&
+    ecoflowSecretKey.length > paramsMinLength &&
+    options.authViaUsername === false
+  );
+}
 
-if (typeof options.nightTime === 'string' && options.nightTime.length > 0) {
-  const intervalMatch = options.nightTime.match(nightTimeRegexp);
-  if (intervalMatch !== null) {
-    nightTimeInterval.push(parseInt(intervalMatch[1]), parseInt(intervalMatch[2]));
+function ecoflowAPIUserIsValid(ecoflowUserName, ecoflowPassword) {
+  return (
+    typeof ecoflowUserName === 'string' &&
+    ecoflowUserName.length > paramsMinLength &&
+    typeof ecoflowPassword === 'string' &&
+    ecoflowPassword.length > paramsMinLength &&
+    options.authViaAccessKey === false
+  );
+}
+
+function ecoflowDeviceSNIsValid(ecoflowDeviceSN) {
+  return typeof ecoflowDeviceSN === 'string' && ecoflowDeviceSN.length > paramsMinLength;
+}
+
+function ecoflowCredentialsIsValid(ecoflowAccessKey, ecoflowSecretKey, ecoflowUserName, ecoflowPassword, ecoflowDeviceSN) {
+  return (
+    (ecoflowAPIAccessIsValid(ecoflowAccessKey, ecoflowSecretKey) || ecoflowAPIUserIsValid(ecoflowUserName, ecoflowPassword)) &&
+    ecoflowDeviceSNIsValid(ecoflowDeviceSN)
+  );
+}
+
+async function getEcoFlowCredentials() {
+  if (typeof process.env.ECOFLOW_ACCESS_KEY === 'string' && process.env.ECOFLOW_ACCESS_KEY.length > paramsMinLength) {
+    cache.setItem('ecoflowAccessKey', process.env.ECOFLOW_ACCESS_KEY);
+  }
+  if (typeof process.env.ECOFLOW_SECRET_KEY === 'string' && process.env.ECOFLOW_SECRET_KEY.length > paramsMinLength) {
+    cache.setItem('ecoflowSecretKey', process.env.ECOFLOW_SECRET_KEY);
+  }
+  if (typeof process.env.ECOFLOW_USERNAME === 'string' && process.env.ECOFLOW_USERNAME.length > 0) {
+    cache.setItem('ecoflowUserName', process.env.ECOFLOW_USERNAME);
+  }
+  if (typeof process.env.ECOFLOW_PASSWORD === 'string' && process.env.ECOFLOW_PASSWORD.length > 0) {
+    cache.setItem('ecoflowPassword', process.env.ECOFLOW_PASSWORD);
+  }
+  if (typeof process.env.ECOFLOW_DEVICE_SN === 'string' && process.env.ECOFLOW_DEVICE_SN.length > 0) {
+    cache.setItem('ecoflowDeviceSN', process.env.ECOFLOW_DEVICE_SN);
+  }
+  const ecoflowAccessKey = cache.getItem('ecoflowAccessKey');
+  const ecoflowSecretKey = cache.getItem('ecoflowSecretKey');
+  const ecoflowUserName = cache.getItem('ecoflowUserName');
+  const ecoflowPassword = cache.getItem('ecoflowPassword');
+  const ecoflowDeviceSN = cache.getItem('ecoflowDeviceSN');
+
+  let result = {ecoflowAccessKey, ecoflowSecretKey, ecoflowUserName, ecoflowPassword, ecoflowDeviceSN};
+  if (! ecoflowCredentialsIsValid(ecoflowAccessKey, ecoflowSecretKey, ecoflowUserName, ecoflowPassword, ecoflowDeviceSN)) {
+    if (ecoflowAPIAccessIsValid(ecoflowAccessKey, ecoflowSecretKey) && ecoflowDeviceSNIsValid(ecoflowDeviceSN)) {
+      result = {ecoflowAccessKey, ecoflowSecretKey, ecoflowDeviceSN};
+    } else if (ecoflowAPIUserIsValid(ecoflowUserName, ecoflowPassword) && ecoflowDeviceSNIsValid(ecoflowDeviceSN)) {
+      result = {ecoflowUserName, ecoflowPassword, ecoflowDeviceSN};
+    } else {
+      if (!(ecoflowAPIAccessIsValid(ecoflowAccessKey, ecoflowSecretKey) || ecoflowAPIUserIsValid(ecoflowUserName, ecoflowPassword))) {
+        let method = '';
+        if (options.authViaAccessKey) {
+          method = 'Access key';
+        } else if (options.authViaUsername) {
+          method = 'Username';
+        }
+        if (method === '') {
+          const prompt = new Select({
+            message: 'Please select the EcoFlow authentication method:',
+            choices: ['Access key', 'Username'],
+          });
+          method = await prompt.run();
+        }
+        if (method === 'Access key') {
+          const prompt = new Form({
+            name: 'ecoflowAccessData',
+            message: 'Please enter your EcoFlow access & secret keys (press Enter only on last line):',
+            choices: [
+              {name: 'accessKey', message: 'Access key:', initial: ecoflowAccessKey || ''},
+              {name: 'secretKey', message: 'Secret key:', initial: ecoflowSecretKey || ''},
+            ],
+          });
+          const {accessKey, secretKey} = await prompt.run();
+          cache.setItem('ecoflowAccessKey', accessKey);
+          cache.setItem('ecoflowSecretKey', secretKey);
+          if (ecoflowAPIAccessIsValid(accessKey, secretKey)) {
+            result = {ecoflowAccessKey: accessKey, ecoflowSecretKey: secretKey};
+          } else {
+            result = {};
+          }
+        } else {
+          const prompt = new Form({
+            name: 'ecoflowUserData',
+            message: 'Please enter your EcoFlow username & password (press Enter only on last line):',
+            choices: [
+              {name: 'userName', message: 'Username:', initial: ecoflowUserName || ''},
+              {name: 'password', message: 'Password:', initial: ecoflowPassword || ''},
+            ],
+          });
+          const {userName, password} = await prompt.run();
+          cache.setItem('ecoflowUserName', userName);
+          cache.setItem('ecoflowPassword', password);
+          if (ecoflowAPIUserIsValid(userName, password)) {
+            result = {ecoflowUserName: userName, ecoflowPassword: password};
+          } else {
+            result = {};
+          }
+        }
+      }
+      if (Object.keys(result).length === 2 && !ecoflowDeviceSNIsValid(ecoflowDeviceSN)) {
+        const prompt = new Input({
+          message: 'Please enter your EcoFlow device SN:',
+          initial: ecoflowDeviceSN || '',
+        });
+        const deviceSN = await prompt.run();
+        cache.setItem('ecoflowDeviceSN', deviceSN);
+        if (ecoflowDeviceSNIsValid(deviceSN)) {
+          result.ecoflowDeviceSN = deviceSN;
+        } else {
+          result = {};
+        }
+      }
+    }
+  }
+  return result;
+}
+
+function createEcoFlowSignature(params, secretKey) {
+  const queryString = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join('&');
+  return crypto.createHmac('sha256', secretKey).update(queryString).digest('hex');
+}
+
+async function getAPIAttributes() {
+  if (typeof process.env.TELEGRAM_API_ID === 'string' && process.env.TELEGRAM_API_ID.length > paramsMinLength) {
+    cache.setItem('telegramApiId', parseInt(process.env.TELEGRAM_API_ID));
+  }
+  if (typeof process.env.TELEGRAM_API_HASH === 'string' && process.env.TELEGRAM_API_HASH.length > paramsMinLength) {
+    cache.setItem('telegramApiHash', process.env.TELEGRAM_API_HASH);
+  }
+  const apiId = cache.getItem('telegramApiId', 'number');
+  const apiHash = cache.getItem('telegramApiHash', 'string');
+  if (typeof apiId !== 'number' || apiId <= 0 || typeof apiHash !== 'string' || apiHash.length < 1) {
+    const prompt = new Form({
+      name: 'telegramApiData',
+      message: 'Please enter your Telegram API ID & Hash (press Enter only on last line):',
+      choices: [
+        {name: 'apiId', message: 'API ID:', initial: apiId || ''},
+        {name: 'apiHash', message: 'API Hash:', initial: apiHash || ''},
+      ],
+    });
+    const apiData = await prompt.run()
+    if (typeof apiData.apiId === 'string' && apiData.apiId.length > paramsMinLength && typeof apiData.apiHash === 'string' && apiData.apiHash.length > paramsMinLength) {
+      cache.setItem('telegramApiId', parseInt(apiData.apiId));
+      cache.setItem('telegramApiHash', apiData.apiHash);
+      return {apiId: parseInt(apiData.apiId), apiHash: apiData.apiHash};
+    } else {
+      throw new Error('API attributes are not valid!');
+    }
+  } else {
+    return {apiId, apiHash};
   }
 }
 
-log.info(`Ecoflow API URL: ${ecoflowAPIURL}`);
-log.info(`As user: ${options.asUser}`);
-log.info(`Keep alive interval: ${options.keepAlive} seconds`);
-log.info(`Log alive status interval: ${options.logAliveStatusInterval} minutes`);
-log.info(`Language: ${options.language}`);
-log.info(`Pin message: ${options.pinMessage}`);
-log.info(`Unpin previous: ${options.unpinPrevious}`);
-log.info(`Add timestamp: ${options.addTimestamp}`);
-log.info(`Time zone: ${options.timeZone}`);
-log.info(`Night time interval: ${nightTimeInterval.length === 2 ? options.nightTime : 'not set'}`);
-
-function getEcoFlowCredentials() {
-  return new Promise((resolve, reject) => {
-    if (typeof process.env.ECOFLOW_USERNAME === 'string' && process.env.ECOFLOW_USERNAME.length > 0) {
-      cache.setItem('ecoflowUserName', process.env.ECOFLOW_USERNAME);
-    }
-    if (typeof process.env.ECOFLOW_PASSWORD === 'string' && process.env.ECOFLOW_PASSWORD.length > 0) {
-      cache.setItem('ecoflowPassword', process.env.ECOFLOW_PASSWORD);
-    }
-    if (typeof process.env.ECOFLOW_DEVICE_SN === 'string' && process.env.ECOFLOW_DEVICE_SN.length > 0) {
-      cache.setItem('ecoflowDeviceSN', process.env.ECOFLOW_DEVICE_SN);
-    }
-    const ecoflowUserName = cache.getItem('ecoflowUserName');
-    const ecoflowPassword = cache.getItem('ecoflowPassword');
-    const ecoflowDeviceSN = cache.getItem('ecoflowDeviceSN');
-    if (
-      typeof ecoflowUserName !== 'string' ||
-      ecoflowUserName.length === 0 ||
-      typeof ecoflowPassword !== 'string' ||
-      ecoflowPassword.length === 0 ||
-      typeof ecoflowDeviceSN !== 'string' ||
-      ecoflowDeviceSN.length === 0
-    ) {
-      const rl = readline.createInterface({
-        input,
-        output,
-      });
-      if (ecoflowUserName === null) {
-        rl.question('Enter your EcoFlow username: ')
-          .then((username) => {
-            cache.setItem('ecoflowUserName', username);
-            rl.question('Enter your EcoFlow password: ')
-              .then((password) => {
-                cache.setItem('ecoflowPassword', password);
-                rl.question('Enter your EcoFlow device SN: ')
-                  // eslint-disable-next-line sonarjs/no-nested-functions
-                  .then((deviceSN) => {
-                    cache.setItem('ecoflowDeviceSN', deviceSN);
-                    rl.close();
-                    resolve({ecoflowUserName: username, ecoflowPassword: password, ecoflowDeviceSN: deviceSN});
-                  })
-                  // eslint-disable-next-line sonarjs/no-nested-functions
-                  .catch((error) => {
-                    log.error(`Error: ${error}`);
-                    rl.close();
-                    reject(error);
-                  });
-              })
-              .catch((error) => {
-                log.error(`Error: ${error}`);
-                rl.close();
-                reject(error);
-              });
-          })
-          .catch((error) => {
-            log.error(`Error: ${error}`);
-            rl.close();
-            reject(error);
-          });
-      }
+async function getBotAuthToken() {
+  if (
+    typeof process.env.TELEGRAM_BOT_AUTH_TOKEN === 'string' &&
+    process.env.TELEGRAM_BOT_AUTH_TOKEN.length >= botAuthTokenMinimumLength
+  ) {
+    cache.setItem('telegramBotAuthToken', process.env.TELEGRAM_BOT_AUTH_TOKEN);
+  }
+  const botAuthToken = cache.getItem('telegramBotAuthToken');
+  if (typeof botAuthToken !== 'string' || botAuthToken.length < botAuthTokenMinimumLength) {
+    const prompt = new Input({
+      message: 'Enter your Bot Auth Token:',
+      initial: botAuthToken || '',
+    });
+    const token = await prompt.run();
+    if (typeof token === 'string' && token.length >= botAuthTokenMinimumLength) {
+      cache.setItem('telegramBotAuthToken', token);
+      return token;
     } else {
-      resolve({ecoflowUserName, ecoflowPassword, ecoflowDeviceSN});
+      throw new Error('Bot Auth Token is not valid!');
     }
-  });
+  } else {
+    return botAuthToken;
+  }
 }
 
-function getAPIAttributes() {
-  return new Promise((resolve, reject) => {
-    const apiId = cache.getItem('telegramApiId', 'number');
-    const apiHash = cache.getItem('telegramApiHash', 'string');
-    if (typeof apiId !== 'number' || apiId <= 0 || typeof apiHash !== 'string' || apiHash.length < 1) {
-      const rl = readline.createInterface({
-        input,
-        output,
-      });
-      rl.question('Enter your API ID: ')
-        .then((id) => {
-          const newApiId = parseInt(id);
-          cache.setItem('telegramApiId', newApiId);
-          rl.question('Enter your API Hash: ')
-            .then((hash) => {
-              cache.setItem('telegramApiHash', hash);
-              rl.close();
-              resolve({apiID: newApiId, hash});
-            })
-            .catch((error) => {
-              log.error(`Error: ${error}`);
-              rl.close();
-              reject(error);
-            });
-        })
-        .catch((error) => {
-          log.error(`Error: ${error}`);
-          rl.close();
-          reject(error);
-        });
+async function getMessageTargetIds() {
+  if (typeof telegramChatId !== 'number' || telegramChatId === 0 || typeof telegramTopicId !== 'number') {
+    const prompt = new Form({
+      name: 'telegramTargetData',
+      message: 'Please enter your Telegram chat ID & topic ID (press Enter only on last line):',
+      choices: [
+        {name: 'chatId', message: 'Chat ID:', initial: telegramChatId || '', type: number},
+        {name: 'topicId', message: 'Topic ID (0 - if no topics):', initial: telegramTopicId || '', type: number},
+      ],
+    });
+    const targetData = await prompt.run();
+    if (typeof targetData.chatId === 'string' && targetData.chatId.length > paramsMinLength && typeof targetData.topicId === 'string' && targetData.topicId.length > 0) {
+      telegramChatId = parseInt(targetData.chatId);
+      telegramTopicId = parseInt(targetData.topicId);
+      cache.setItem('telegramChatId', telegramChatId);
+      cache.setItem('telegramTopicId', telegramTopicId);
     } else {
-      resolve({apiId, apiHash});
+      throw new Error('Telegram target IDs are not valid!');
     }
-  });
-}
-
-function getBotAuthToken() {
-  return new Promise((resolve, reject) => {
-    const botAuthToken = cache.getItem('telegramBotAuthToken');
-    if (typeof botAuthToken !== 'string' || botAuthToken.length < botAuthTokenMinimumLength) {
-      const rl = readline.createInterface({
-        input,
-        output,
-      });
-      rl.question('Enter your Bot Auth Token: ')
-        .then((token) => {
-          cache.setItem('telegramBotAuthToken', token);
-          rl.close();
-          resolve(token);
-        })
-        .catch((error) => {
-          log.error(`Error: ${error}`);
-          rl.close();
-          reject(error);
-        });
-    } else {
-      resolve(botAuthToken);
-    }
-  });
-}
-
-function getMessageTargetIds() {
-  return new Promise((resolve, reject) => {
-    if (typeof telegramChatId !== 'number' || telegramChatId === 0 || typeof telegramTopicId !== 'number') {
-      const rl = readline.createInterface({
-        input,
-        output,
-      });
-      rl.question('Enter your chat ID: ')
-        .then((id) => {
-          telegramChatId = parseInt(id);
-          cache.setItem('telegramChatId', telegramChatId);
-          rl.question('Enter your topic ID(0 - if no topics): ')
-            .then((id) => {
-              telegramTopicId = parseInt(id);
-              cache.setItem('telegramTopicId', id);
-              rl.close();
-              resolve();
-            })
-            .catch((error) => {
-              log.error(`Error: ${error}`);
-              rl.close();
-              reject(error);
-            });
-        })
-        .catch((error) => {
-          log.error(`Error: ${error}`);
-          rl.close();
-          reject(error);
-        });
-    } else {
-      resolve();
-    }
-  });
+  } else {
+    return;
+  }
 }
 
 function getTelegramClient() {
@@ -341,12 +418,6 @@ function getTelegramClient() {
     if (options.asUser === true) {
       telegramUserSessionMigrate();
       const storeSession = new StoreSession(`data/session`);
-      if (typeof process.env.TELEGRAM_API_ID === 'string' && process.env.TELEGRAM_API_ID.length > 0) {
-        cache.setItem('telegramApiId', parseInt(process.env.TELEGRAM_API_ID));
-      }
-      if (typeof process.env.TELEGRAM_API_HASH === 'string' && process.env.TELEGRAM_API_HASH.length > 0) {
-        cache.setItem('telegramApiHash', process.env.TELEGRAM_API_HASH);
-      }
       getAPIAttributes()
         .then(({apiId, apiHash}) => {
           const client = new TelegramClient(storeSession, apiId, apiHash, {
@@ -355,33 +426,42 @@ function getTelegramClient() {
             connectionTimeout: 10000,
             appVersion: `${scriptName} v${scriptVersion}`,
           });
-          const rl = readline.createInterface({
-            input,
-            output,
-          });
           client
             .start({
               phoneNumber: async () => {
-                return rl.question('Enter your phone number: ');
+                const result = await prompt({
+                  type: 'input',
+                  name: 'phone',
+                  message: 'Enter your phone number:',
+                });
+                return result ? result.phone : '';
               },
               phoneCode: async () => {
-                return rl.question('Enter the code sent to your phone: ');
+                const result = await prompt({
+                  type: 'input',
+                  name: 'code',
+                  message: 'Enter the code:',
+                });
+                return result ? result.code : '';
               },
               password: async () => {
-                return rl.question('Enter your password: ');
+                const result = await prompt({
+                  type: 'password',
+                  name: 'password',
+                  message: 'Enter the password:',
+                });
+                return result ? result.password : '';
               },
               onError: (error) => {
                 log.error(`Telegram client error: ${error}`);
               },
             })
             .then(() => {
-              rl.close();
               log.debug('Telegram client is connected');
               client.setParseMode(parseMode);
               resolve(client);
             })
             .catch((error) => {
-              rl.close();
               log.error(`Telegram client connection error: ${error}`);
               reject(error);
             });
@@ -391,12 +471,6 @@ function getTelegramClient() {
           reject(error);
         });
     } else {
-      if (
-        typeof process.env.TELEGRAM_BOT_AUTH_TOKEN === 'string' &&
-        process.env.TELEGRAM_BOT_AUTH_TOKEN.length >= botAuthTokenMinimumLength
-      ) {
-        cache.setItem('telegramBotAuthToken', process.env.TELEGRAM_BOT_AUTH_TOKEN);
-      }
       getBotAuthToken()
         .then((token) => {
           const client = new GrammyApi(token);
@@ -532,7 +606,7 @@ function getTelegramPrepared() {
               // eslint-disable-next-line sonarjs/no-nested-functions
               .then((entity) => {
                 targetEntity = entity;
-                resolve();
+                resolve(true);
               })
               // eslint-disable-next-line sonarjs/no-nested-functions
               .catch((error) => {
@@ -837,16 +911,58 @@ function gracefulExit() {
   }
 }
 
+function processResponse(response, stage) {
+  if (response?.status === 200 && response?.data?.code == 0 && typeof response?.data?.data === 'object') {
+    log.info(`Ecoflow ${stage} is successful. Getting MQTT client ...`);
+    return response.data.data;
+  } else {
+    log.error(
+      `Error: Ecoflow ${stage} failed! Response: status=${response?.status}, code=${response?.data?.code}, message=${response?.data?.message}`,
+    );
+    mqttExit();
+  }
+}
+
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
-getTelegramPrepared()
-  .then(() => {
-    log.info('Telegram is prepared. Ready to receive MQTT messages!');
-    getEcoFlowCredentials()
-      .then(({ecoflowUserName, ecoflowPassword, ecoflowDeviceSN}) => {
-        ecoflowAPI
-          .post(
+(async () => {
+  try {
+    if (await getTelegramPrepared()) {
+      log.info('Telegram is prepared. Going to connect to EcoFlow MQTT!');
+      let certResponse = {};
+      let mqttClientId = cache.getItem('mqttClientIdPrefix');
+      if (typeof mqttClientId !== 'string' || mqttClientId.length < paramsMinLength) {
+        mqttClientId = `ANDROID_${uuidv4().toUpperCase()}`;
+        cache.setItem('mqttClientIdPrefix', mqttClientId);
+      }
+      const {ecoflowAccessKey, ecoflowSecretKey, ecoflowUserName, ecoflowPassword, ecoflowDeviceSN} = await getEcoFlowCredentials();
+      if (ecoflowAPIAccessIsValid(ecoflowAccessKey, ecoflowSecretKey) ) {
+        const params = {
+          accessKey: ecoflowAccessKey,
+          // eslint-disable-next-line sonarjs/pseudo-random
+          nonce: Math.floor(Math.random() * 1000000),
+          timestamp: Date.now(),
+        };
+        const signature = createEcoFlowSignature(params, ecoflowSecretKey);
+        try {
+          const response = await ecoflowAPI.get(ecoflowAPIAccessCertificationPath, {
+            headers: {
+              ...params,
+              sign: signature,
+            },
+          });
+          certResponse = processResponse(response, 'access keys certification');
+          if (certResponse?.protocol === 'mqtts') {
+            ecoflowTopic = `/open/${certResponse.certificateAccount}/${ecoflowDeviceSN}/quota`;
+          }
+        } catch (error) {
+          log.error(`Error: ${error}`);
+          mqttExit();
+        }
+      } else if (ecoflowAPIUserIsValid(ecoflowUserName, ecoflowPassword)) {
+        try {
+          const response = await ecoflowAPI.post(
             ecoflowAPIAuthenticationPath,
             {
               email: ecoflowUserName,
@@ -854,84 +970,72 @@ getTelegramPrepared()
               scene: 'IOT_APP',
               userType: 'ECOFLOW',
             },
-            {headers: headers},
-          )
-          .then((response) => {
-            log.info('Ecoflow authentication is successful. Getting certification ...');
-            let token, userId, userName;
-            try {
-              token = response.data.data.token;
-              userId = response.data.data.user.userId;
-              userName = response.data.data.user.name;
-            } catch (error) {
-              throw new Error(`Failed to extract key ${error.message} from response: ${stringify(response)}`);
-            }
-            log.debug(`Ecoflow `, {token});
-            log.debug(`Ecoflow `, {userId});
-            log.debug(`Ecoflow `, {userName});
-            const headers = {
-              lang: 'en_US',
-              authorization: `Bearer ${token}`,
-            };
-            ecoflowAPI
-              .get(`${ecoflowAPICertificationPath}?userId=${userId}`, {headers: headers})
-              .then((response) => {
-                log.info('Ecoflow certification is successful. Getting MQTT client ...');
-                let mqttUrl, mqttPort, mqttProtocol, mqttUsername, mqttPassword, mqttClientId;
-                try {
-                  mqttUrl = response.data.data.url;
-                  mqttPort = parseInt(response.data.data.port, 10); // Ensure port is an integer
-                  mqttProtocol = response.data.data.protocol;
-                  mqttUsername = response.data.data.certificateAccount;
-                  mqttPassword = response.data.data.certificatePassword;
-                  // Generate a unique MQTT client ID
-                  mqttClientId = `ANDROID_${uuidv4().toUpperCase()}_${userId}`;
-                } catch (error) {
-                  throw new Error(`Failed to extract key ${error.message} from response: ${stringify(response)}`);
-                }
-                log.debug(`Ecoflow MQTT URL: ${mqttUrl}`);
-                log.debug(`Ecoflow MQTT port: ${mqttPort}`);
-                log.debug(`Ecoflow MQTT protocol: ${mqttProtocol}`);
-                log.debug(`Ecoflow `, {mqttUsername});
-                log.debug(`Ecoflow `, {mqttUsername});
-                log.debug(`Ecoflow `, {mqttClientId});
-
-                const connectMQTTUrl = `${mqttProtocol}://${mqttUrl}:${mqttPort}`;
-                mqttOptions = {
-                  clientId: mqttClientId,
-                  clean: true,
-                  connectTimeout: 4000,
-                  username: mqttUsername,
-                  password: mqttPassword,
-                  reconnectPeriod: 1000,
-                  protocol: mqttProtocol,
-                };
-                ecoflowTopic += ecoflowDeviceSN;
-                try {
-                  mqttClient = mqtt.connect(connectMQTTUrl, mqttOptions);
-                  log.info('Ecoflow MQTT broker is connected.');
-                  mqttSetMainHandlers();
-                } catch (error) {
-                  log.error(`Ecoflow MQTT broker connection error: ${error}`);
-                  gracefulExit();
-                }
-              })
-              .catch((error) => {
-                log.error(`Ecoflow certification error: ${error}`);
-                gracefulExit();
-              });
-          })
-          .catch((error) => {
-            log.error(`Error: ${error}`);
-            gracefulExit();
-          });
-      })
-      .catch((error) => {
-        log.error(`Error: ${error}`);
+            {headers},
+          );
+          const apiResponse = processResponse(response, 'authentication');
+          if (typeof apiResponse.token === 'string' && apiResponse.token.length > paramsMinLength) {
+            const token = apiResponse.token;
+            const {userId, name: userName} = apiResponse.user;
+            log.debug(`Ecoflow token:`, {token});
+            log.debug(`Ecoflow userId:`, {userId});
+            log.debug(`Ecoflow userName:`, {userName});
+            const response = await ecoflowAPI.get(`${ecoflowAPIUserCertificationPath}?userId=${userId}`, {
+              headers: {lang: 'en_US', authorization: `Bearer ${token}`},
+            });
+            certResponse = processResponse(response, 'authenticated certification');
+            mqttClientId += `_${userId}`;
+              ecoflowTopic += ecoflowDeviceSN;
+          } else {
+            log.error(`Error: Ecoflow authentication failed!`);
+            mqttExit();
+          }
+        } catch (error) {
+          log.error(`Error: ${error}`);
+          mqttExit();
+        }
+      }
+      if (typeof certResponse === 'object' && certResponse?.protocol === 'mqtts') {
+        const {
+          url: mqttUrl,
+          port: mqttPort,
+          protocol: mqttProtocol,
+          certificateAccount: mqttUsername,
+          certificatePassword: mqttPassword,
+        } = certResponse;
+        log.debug(`Ecoflow MQTT URL: ${mqttUrl}`);
+        log.debug(`Ecoflow MQTT port: ${mqttPort}`);
+        log.debug(`Ecoflow MQTT protocol: ${mqttProtocol}`);
+        log.debug(`Ecoflow MQTT username:`, {mqttUsername});
+        log.debug(`Ecoflow MQTT password:`, {mqttPassword});
+        log.debug(`Ecoflow MQTT client ID:`, {mqttClientId});
+        const connectMQTTUrl = `${mqttProtocol}://${mqttUrl}:${mqttPort}`;
+        mqttOptions = {
+          clientId: mqttClientId,
+          clean: true,
+          connectTimeout: 4000,
+          username: mqttUsername,
+          password: mqttPassword,
+          reconnectPeriod: 1000,
+          protocol: mqttProtocol,
+        };
+        try {
+          mqttClient = mqtt.connect(connectMQTTUrl, mqttOptions);
+          log.info('Ecoflow MQTT broker is connected.');
+          mqttSetMainHandlers();
+        } catch (error) {
+          log.error(`Ecoflow MQTT broker connection error: ${error}`);
+          gracefulExit();
+        }
+      } else {
+        log.error(`Ecoflow MQTT broker is not available!`);
         gracefulExit();
-      });
-  })
-  .catch((error) => {
-    log.error(`Telegram is not ready: ${error}`);
+      }
+    } else {
+      log.error(`Telegram is not ready!`);
+      gracefulExit();
+    }
+  } catch (error) {
+    log.error(`Error: ${error}`);
     gracefulExit();
-  });
+  }
+})();

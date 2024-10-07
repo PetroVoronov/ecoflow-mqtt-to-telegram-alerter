@@ -67,51 +67,73 @@ docker pull petrovoronov/ecoflow-mqtt-to-telegram-alerter
 
 Basic configuration parameters, including Telegram credentials can be passed as environment variables, or you can skip it and application will ask you to enter it interactively.
 
-### Environment variables in  case of working as telegram bot (default)
+After first run these parameters will be stored in the `data/storage` directory and will be used for the next runs.
+So you will be asked to enter the parameters only once (or you should pass it as environment variables only on the first run).
+
+**Important notice: if you want to change the parameters you should pass it again as environment variables at any time.**
+
+Will look on it splitting by area of usage:
+
+### Environment variables related to the EcoFlow API
+
+There are two ways to authenticate with the EcoFlow API - via access & secret keys or via username & password. You can choose one of them.
+
+#### Access & secret keys (preferred)
+
+```sh
+export ECOFLOW_ACCESS_KEY=your_ecoflow_access_key
+export ECOFLOW_SECRET_KEY=your_ecoflow_secret_key
+export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
+```
+
+#### Username & password
 
 ```sh
 export ECOFLOW_USERNAME=your_ecoflow_username
 export ECOFLOW_PASSWORD=your_ecoflow_password
 export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
+```
+
+### Environment variables related to the Telegram API
+
+Please pay attention that you should pass TELEGRAM_TOPIC_ID in any case. If no topics in target chat, set it to 0.
+
+#### Environment variables in  case of working as telegram bot (default)
+
+```sh
 export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
 export TELEGRAM_CHAT_ID=your_telegram_chat_id
 export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 ```
 
-### Environment variables in case of working as telegram user
+#### Environment variables in case of working as telegram user
 
 ```sh
-export ECOFLOW_USERNAME=your_ecoflow_username
-export ECOFLOW_PASSWORD=your_ecoflow_password
-export ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
 export TELEGRAM_API_ID=your_telegram_api_id
 export TELEGRAM_API_HASH=your_telegram_api_hash
 export TELEGRAM_CHAT_ID=your_telegram_chat_id
 export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 ```
 
-After first run these parameters will be stored in the `data/storage` directory and will be used for the next runs.
-So you will be asked to enter the parameters only once (or you should pass it as environment variables only on the first run).
-
-**Important notice: if you want to change the parameters you should pass it again as environment variables at any time.**
-
 ## Command-line Options
 
 The application can be configured using the following command-line options:
 
-| Option                        | Short | Description | Type | Default | Required |
-|-------------------------------|-------|-------------|------|---------|----------|
-| `--api-url`                   | `-a`  | URL of the Ecoflow API | String  | `https://api.ecoflow.com` | No  |
-| `--as-user`                   |       | Start as user instance (bot instance by default)  | Boolean | | No  |
-| `--keep-alive`                | `-k`  | Check if the MQTT client is alive every X seconds  | Number  | `60` | No  |
-| `--log-alive-status-interval` |       | Log the MQTT client alive status every Y minutes   | Number  | `0` | No  |
-| `--language`                  | `-l`  | Language code for i18n | String  | `en` | No  |
-| `--pin-message`               | `-p`  | Unpin message from chat   | Boolean | `false` | No  |
-| `--unpin-previous`            | `-u`  | Pin message to chat  | Boolean | `false` | No  |
-| `--add-timestamp`             | `-t`  | Add timestamp to message  | Boolean | `false` | No  |
-| `--tz`, `--time-zone`         |       | Time zone for timestamp   | String  | Value of `TZ` environment variable or empty string | No  |
-| `--night-time`                | `-n`  | Interval in hours, when the script is sending messages in silent mode. Format is "start:stop" in 24h format   | String | Empty string | No  |
-| `-d, --debug`                 | `-d`  | Debug level of logging | String  | | No  |
+| Option                        | Short | Description                                           |  Type   | Default | Required |
+|-------------------------------|-------|-------------------------------------------------------|---------|---------|----------|
+| `--api-url`                   | `-a`  | URL of the Ecoflow API                                | String  | `https://api.ecoflow.com` | No  |
+| `--auth-via-access-key`       |       | Use the access key for the Ecoflow API authentication | Boolean | `false` | No       |
+| `--auth-via-username-password`|       | Use the username and password for the Ecoflow API authentication | Boolean | `false` | No       |
+| `--as-user`                   |       | Start as user instance (bot instance by default)      | Boolean | `false` |    No    |
+| `--keep-alive`                | `-k`  | Check if the MQTT client is alive every X seconds     | Number  |  `60`   |    No    |
+| `--log-alive-status-interval` |       | Log the MQTT client alive status every Y minutes      | Number  |   `0`   |    No    |
+| `--language`                  | `-l`  | Language code for i18n                                | String  |  `en`   |    No    |
+| `--pin-message`               | `-p`  | Unpin message from chat                               | Boolean | `false` |    No    |
+| `--unpin-previous`            | `-u`  | Pin message to chat                                   | Boolean | `false` |    No    |
+| `--add-timestamp`             | `-t`  | Add timestamp to message                              | Boolean | `false` |    No    |
+| `--tz`, `--time-zone`         |       | Time zone for timestamp                               | String  | Value of `TZ` environment variable or empty string |    No    |
+| `--night-time`                | `-n`  | Interval in hours, when the script is sending messages in silent mode. Format is "start:stop" in 24h format   | String | Empty string |    No    |
+| `-d, --debug`                 | `-d`  | Debug level of logging                                | Boolean | `false` |    No    |
 
 ## Running the Application
 
@@ -128,6 +150,8 @@ node index.js --language en --as-user --keep-alive 30 --log-alive-status-interva
 By default the application will run as a telegram user instance and without any additional command-line options.
 
 Due to the limitations of the Docker environment, the application will not be able to ask for the missing configuration parameters interactively. That's why you need to make a first run in interactive mode to provide the missing parameters.
+
+**Important notice: pass all later needed command-line options at first run!***
 
 #### Docker Volumes
 
@@ -177,9 +201,18 @@ After the first run the application will store the configuration parameters and 
 
 #### Docker first run to work as Telegram bot
 
-There is no interactive mode for the telegram bot instance is needed. But only if you will pass all needed configuration parameters as environment variables at the first run.
+- If you don't want to pass the configuration parameters as environment variables at the first run, you can run the docker image in interactive mode and pass the needed parameters interactively.
 
-So, the first run should be like one of the following:
+  And again, after the first run the application will store the configuration parameters and additional info - please stop the container by pressing `Ctrl+C` and start it again with the commands from the next section.
+
+```sh
+docker run -it --name ecoflow-mqtt-to-telegram-alerter \
+    -v /path/to/your/data:/app/data \
+    -v /path/to/your/locales:/app/locales \
+    petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
+```
+
+- But please take in account there is no interactive mode for the telegram bot instance is needed. Simple pass all needed parameters as environment variables at the first run.
 
 ```sh
 docker run -d --name ecoflow-mqtt-to-telegram-alerter \
@@ -193,17 +226,6 @@ docker run -d --name ecoflow-mqtt-to-telegram-alerter \
     -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
     petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
 ```
-
-In case you don't want to pass the configuration parameters as environment variables at the first run, you can run the docker image in interactive mode and pass the needed parameters interactively:
-
-```sh
-docker run -it --name ecoflow-mqtt-to-telegram-alerter \
-    -v /path/to/your/data:/app/data \
-    -v /path/to/your/locales:/app/locales \
-    petrovoronov/ecoflow-mqtt-to-telegram-alerter:latest
-```
-
-**Important notice: pass all later needed command-line options at first run!***
 
 #### Docker next runs
 
@@ -225,7 +247,7 @@ docker stop ecoflow-mqtt-to-telegram-alerter
 
 To run the application using Docker Compose, create a `docker-compose.yml` file with the following content:
 
-### In case of working as telegram user
+### Working as Telegram user with username & password to access EcoFlow API
 
 ```yaml
 version: '3'
@@ -246,7 +268,7 @@ services:
         command: --as-user
 ```
 
-### In case of working as telegram bot
+### Working as Telegram bot with access & secret keys for EcoFlow API
 
 ```yaml
 version: '3'
@@ -257,8 +279,8 @@ services:
             - /path/to/your/data:/app/data
             - /path/to/your/locales:/app/locales
         environment:
-            - ECOFLOW_USERNAME=your_ecoflow_username
-            - ECOFLOW_PASSWORD=your_ecoflow_password
+            - ECOFLOW_ACCESS_KEY=your_ecoflow_access_key
+            - ECOFLOW_SECRET_KEY=your_ecoflow_secret_key
             - ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
             - TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
