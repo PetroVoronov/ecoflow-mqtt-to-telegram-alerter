@@ -408,80 +408,80 @@ async function getMessageTargetIds() {
     } else {
       throw new Error('Telegram target IDs are not valid!');
     }
-  } else {
-    return;
   }
 }
 
-function getTelegramClient() {
-  return new Promise((resolve, reject) => {
-    if (options.asUser === true) {
-      telegramUserSessionMigrate();
-      const storeSession = new StoreSession(`data/session`);
-      getAPIAttributes()
-        .then(({apiId, apiHash}) => {
-          const client = new TelegramClient(storeSession, apiId, apiHash, {
-            connectionRetries: 5,
-            useWSS: true,
-            connectionTimeout: 10000,
-            appVersion: `${scriptName} v${scriptVersion}`,
-          });
-          client
-            .start({
-              phoneNumber: async () => {
-                const result = await prompt({
-                  type: 'input',
-                  name: 'phone',
-                  message: 'Enter your phone number:',
-                });
-                return result ? result.phone : '';
-              },
-              phoneCode: async () => {
-                const result = await prompt({
-                  type: 'input',
-                  name: 'code',
-                  message: 'Enter the code:',
-                });
-                return result ? result.code : '';
-              },
-              password: async () => {
-                const result = await prompt({
-                  type: 'password',
-                  name: 'password',
-                  message: 'Enter the password:',
-                });
-                return result ? result.password : '';
-              },
-              onError: (error) => {
-                log.error(`Telegram client error: ${error}`);
-              },
-            })
-            .then(() => {
-              log.debug('Telegram client is connected');
-              client.setParseMode(parseMode);
-              resolve(client);
-            })
-            .catch((error) => {
-              log.error(`Telegram client connection error: ${error}`);
-              reject(error);
-            });
-        })
-        .catch((error) => {
-          log.error(`API attributes error: ${error}!`);
-          reject(error);
+async function getTelegramClient() {
+  let client = null;
+  if (options.asUser === true) {
+    telegramUserSessionMigrate();
+    const storeSession = new StoreSession(`data/session`);
+    const {apiId, apiHash} = await getAPIAttributes()
+    if (typeof apiId === 'number' && apiId > 0 && typeof apiHash === 'string' && apiHash.length > paramsMinLength) {
+      try {
+        client = new TelegramClient(storeSession, apiId, apiHash, {
+          connectionRetries: 5,
+          useWSS: true,
+          connectionTimeout: 10000,
+          appVersion: `${scriptName} v${scriptVersion}`,
         });
+        try {
+          await client.start({
+            phoneNumber: async () => {
+              const result = await prompt({
+                type: 'input',
+                name: 'phone',
+                message: 'Enter your phone number:',
+              });
+              return result ? result.phone : '';
+            },
+            phoneCode: async () => {
+              const result = await prompt({
+                type: 'input',
+                name: 'code',
+                message: 'Enter the code:',
+              });
+              return result ? result.code : '';
+            },
+            password: async () => {
+              const result = await prompt({
+                type: 'password',
+                name: 'password',
+                message: 'Enter the password:',
+              });
+              return result ? result.password : '';
+            },
+            onError: (error) => {
+              log.error(`Telegram client error: ${error}`);
+            },
+          })
+          client.setParseMode(parseMode);
+          const user = await client.getMe();
+          log.debug(`Telegram client is connected as user: ${user.firstName} ${user.lastName} (${user.username})`);
+        } catch (error) {
+          log.error(`Telegram client connection error: ${error}`);
+        };
+      } catch (error) {
+        log.error(`API attributes error: ${error}`);
+      }
     } else {
-      getBotAuthToken()
-        .then((token) => {
-          const client = new GrammyApi(token);
-          resolve(client);
-        })
-        .catch((error) => {
-          log.error(`Bot Auth Token error: ${error}`);
-          reject(error);
-        });
+      log.error(`API attributes error!`);
     }
-  });
+  } else {
+    const token = await getBotAuthToken();
+    if (typeof token === 'string' && token.length >= botAuthTokenMinimumLength) {
+      try {
+        client = new GrammyApi(token);
+        const bot = await client.getMe();
+        log.debug(`Telegram client is connected as bot: ${bot.first_name} (${bot.username})`);
+      } catch (error) {
+        log.error(`Bot Auth Token error: ${error}`);
+      }
+    } else {
+      log.error(`Bot Auth Token error!`);
+    }
+  }
+  return client;
 }
 
 function telegramUserSessionMigrate() {
@@ -520,186 +520,186 @@ function telegramUserSessionMigrate() {
   }
 }
 
-function getTelegramTargetEntity() {
-  return new Promise((resolve, reject) => {
-    if (options.asUser === false) {
-      telegramClient
-        .getChat(telegramChatId)
-        .then((entity) => {
-          targetTitle = entity.title || `${entity.first_name || ''} ${entity.last_name || ''} (${entity.username || ''})`;
-          log.debug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
-          resolve(entity);
-        })
-        .catch((error) => {
-          log.warn(`Telegram chat with ID ${telegramChatId} not found! Error: ${error}`);
-          reject(error);
-        });
+async function getTelegramTargetEntity() {
+  let entity = null;
+  if (options.asUser === false) {
+    try {
+      entity = await telegramClient.getChat(telegramChatId);
+    } catch (error) {
+      log.error(`Error to get chat with ID ${telegramChatId}: ${error}`);
+    }
+    if (typeof entity === 'object' && entity !== null) {
+      targetTitle = entity.title || `${entity.first_name || ''} ${entity.last_name || ''} (${entity.username || ''})`;
+      log.debug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
     } else {
-      telegramClient
-        .getDialogs()
-        .then((dialogs) => {
-          let chatId = telegramChatId > 0 ? telegramChatId : -telegramChatId;
-          if (chatId > 1000000000000) {
-            chatId = chatId - 1000000000000;
+      log.warn(`Telegram chat with ID ${telegramChatId} not found! Error: ${error}`);
+    }
+  } else {
+    let dialogs = [];
+    try {
+      dialogs = await telegramClient.getDialogs()
+    } catch (error) {
+      log.error(`Error to get dialogs: ${error}`);
+    }
+
+    if (Array.isArray(dialogs) && dialogs.length > 0) {
+      let chatId = telegramChatId > 0 ? telegramChatId : -telegramChatId;
+      if (chatId > 1000000000000) {
+        chatId = chatId - 1000000000000;
+      }
+      const availableDialogs = dialogs.filter(
+          (dialog) => dialog.entity?.migratedTo === undefined || dialog.entity?.migratedTo === null,
+        ),
+        targetDialog = availableDialogs.find((item) => `${chatId}` === `${item.entity.id}`);
+      if (targetDialog !== undefined) {
+        targetTitle =
+          targetDialog.entity.title ||
+          `${targetDialog.entity.firstName || ''} ${targetDialog.entity.lastName || ''} (${targetDialog.entity.username || ''})`;
+        if (telegramTopicId === 0) {
+          log.debug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
+          entity = targetDialog.entity;
+        } else if (telegramTopicId > 0) {
+          let response = null;
+          try {
+            response = await telegramClient.invoke(
+              new Api.channels.GetForumTopics({
+                channel: targetDialog.entity,
+                limit: 100,
+                offsetId: 0,
+                offsetDate: 0,
+                addOffset: 0,
+              }),
+            )
+          } catch (error) {
+            log.error(`Error to get topics in chat "${targetTitle}" with ID ${telegramChatId}: ${error}`);
           }
-          const availableDialogs = dialogs.filter(
-              (dialog) => dialog.entity?.migratedTo === undefined || dialog.entity?.migratedTo === null,
-            ),
-            targetDialog = availableDialogs.find((item) => `${chatId}` === `${item.entity.id}`);
-          if (targetDialog !== undefined) {
-            targetTitle =
-              targetDialog.entity.title ||
-              `${targetDialog.entity.firstName || ''} ${targetDialog.entity.lastName || ''} (${targetDialog.entity.username || ''})`;
-            if (telegramTopicId > 0) {
-              telegramClient
-                .invoke(
-                  new Api.channels.GetForumTopics({
-                    channel: targetDialog.entity,
-                    limit: 100,
-                    offsetId: 0,
-                    offsetDate: 0,
-                    addOffset: 0,
-                  }),
-                )
-                .then((response) => {
-                  if (Array.isArray(response.topics) && response.topics.length > 0) {
-                    // eslint-disable-next-line sonarjs/no-nested-functions
-                    const targetTopic = response.topics.find((topic) => topic.id === telegramTopicId);
-                    if (targetTopic) {
-                      log.debug(`Telegram topic "${targetTopic.title}" in chat "${targetTitle}" with ID ${telegramChatId} found!`);
-                      resolve(targetDialog.entity);
-                    } else {
-                      log.warn(`Topic with id ${telegramTopicId} not found in "${targetTitle}" (${telegramChatId})!`);
-                      reject(new Error(`Topic with id ${telegramTopicId} not found in "${targetTitle}" (${telegramChatId})!`));
-                    }
-                  } else {
-                    log.warn(`No topics found in "${targetTitle}" (${telegramChatId})!`);
-                    reject(new Error(`No topics found in "${targetTitle}" (${telegramChatId})!`));
-                  }
-                })
-                .catch((error) => {
-                  reject(error);
-                });
+          if (typeof response === 'object' && response !== null && Array.isArray(response.topics) && response.topics.length > 0) {
+            // eslint-disable-next-line sonarjs/no-nested-functions
+            const targetTopic = response.topics.find((topic) => topic.id === telegramTopicId);
+            if (targetTopic) {
+              log.debug(`Telegram topic "${targetTopic.title}" in chat "${targetTitle}" with ID ${telegramChatId} found!`);
+              entity = targetDialog.entity;
             } else {
-              log.debug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
-              resolve(targetDialog.entity);
+              log.warn(`Topic with id ${telegramTopicId} not found in "${targetTitle}" (${telegramChatId})!`);
             }
           } else {
-            reject(new Error(`Telegram chat with ID ${telegramChatId} not found`));
+            log.warn(`No topics found in "${targetTitle}" (${telegramChatId})!`);
           }
-        })
-        .catch((error) => {
-          reject(error);
-        });
-    }
-  });
-}
-
-function getTelegramPrepared() {
-  return new Promise((resolve, reject) => {
-    getTelegramClient()
-      .then((client) => {
-        telegramClient = client;
-        getMessageTargetIds()
-          .then(() => {
-            getTelegramTargetEntity()
-              // eslint-disable-next-line sonarjs/no-nested-functions
-              .then((entity) => {
-                targetEntity = entity;
-                resolve(true);
-              })
-              // eslint-disable-next-line sonarjs/no-nested-functions
-              .catch((error) => {
-                log.error(`Telegram target entity error: ${error}`);
-                reject(error);
-              });
-          })
-          .catch((error) => {
-            log.error(`Message target IDs error: ${error}`);
-            reject(error);
-          });
-      })
-      .catch((error) => {
-        log.error(`Telegram client error: ${error}`);
-        reject(error);
-      });
-  });
-}
-
-function telegramSendMessage(target, messages, messageOptions) {
-  return new Promise((resolve, reject) => {
-    if (telegramClient !== null) {
-      telegramClient
-        .sendMessage(target, messages, messageOptions)
-        .then((message) => {
-          resolve(options.asUser === true ? message.id : message.message_id);
-        })
-        .catch((error) => {
-          reject(error);
-        });
-    } else {
-      reject(new Error('Telegram client is not ready!'));
-    }
-  });
-}
-
-function telegramPinMessage(target, messageId) {
-  return new Promise((resolve, reject) => {
-    if (telegramClient !== null) {
-      if (options.asUser === true) {
-        telegramClient
-          .pinMessage(target, messageId)
-          .then(() => {
-            resolve();
-          })
-          .catch((error) => {
-            reject(error);
-          });
+        }
       } else {
-        telegramClient
-          .pinChatMessage(target, messageId)
-          .then(() => {
-            resolve();
-          })
-          .catch((error) => {
-            reject(error);
-          });
+        log.error(`Telegram chat with ID ${telegramChatId} not found!`);
       }
     } else {
-      reject(new Error('Telegram client is not ready!'));
+      log.error(`No dialogs found!`);
     }
-  });
+  }
+  return entity;
 }
 
-function telegramUnpinMessage(target, messageId) {
-  return new Promise((resolve, reject) => {
-    if (telegramClient !== null) {
-      if (options.asUser === true) {
-        telegramClient
-          .unpinMessage(target, messageId)
-          .then(() => {
-            resolve();
-          })
-          .catch((error) => {
-            reject(error);
-          });
-      } else {
-        telegramClient
-          .unpinChatMessage(target, messageId)
-          .then(() => {
-            resolve();
-          })
-          .catch((error) => {
-            reject(error);
-          });
+async function getTelegramPrepared() {
+  let result = false;
+  try {
+    telegramClient = await getTelegramClient();
+  } catch (error) {
+    log.error(`Telegram client error: ${error}`);
+    gracefulExit();
+  }
+  if (telegramClient !== null) {
+    try {
+      await getMessageTargetIds();
+    } catch (error) {
+      log.error(`Message target IDs error: ${error}`);
+      gracefulExit();
+    }
+    try {
+      targetEntity = await getTelegramTargetEntity();
+    } catch (error) {
+      log.error(`Telegram target entity error: ${error}`);
+      gracefulExit();
+    }
+    if (targetEntity !== null) {
+      log.debug(`Telegram target entity: ${stringify(targetEntity)}`);
+      result = true;
+    } else {
+      log.error(`Telegram target entity not found!`);
+      gracefulExit();
+    }
+  } else {
+    log.error(`Telegram client is not ready!`);
+    gracefulExit();
+  }
+  return result;
+}
+
+async function telegramSendMessage(target, messages, messageOptions) {
+  let messageId = 0;
+  if (telegramClient !== null) {
+    let message = null;
+    try {
+      message = await telegramClient.sendMessage(target, messages, messageOptions);
+    } catch (error) {
+      log.error(`Telegram message error: ${error}`);
+    }
+    if (typeof message === 'object' && message !== null) {
+      messageId = options.asUser === true ? message.id : message.message_id
+    } else {
+      throw new Error('Telegram message is not sent!');
+    }
+  } else {
+    log.error(`Telegram client is not ready!`);
+  }
+  return messageId;
+}
+
+async function telegramPinMessage(target, messageId) {
+  let result = false;
+  if (telegramClient !== null) {
+    if (options.asUser === true) {
+      try {
+        await telegramClient.pinMessage(target, messageId);
+        result = true;
+      } catch (error) {
+        log.error(`Telegram message pin error: ${error}`);
       }
     } else {
-      reject(new Error('Telegram client is not ready!'));
+      try {
+        await telegramClient.pinChatMessage(target, messageId);
+        result = true;
+      } catch (error) {
+        log.error(`Telegram message pin error: ${error}`);
+      }
     }
-  });
+  } else {
+    log.error(`Telegram client is not ready!`);
+  }
+  return result;
 }
 
-function telegramMessageOnChange(currentInputState) {
+async function telegramUnpinMessage(target, messageId) {
+  let result = false;
+  if (telegramClient !== null) {
+    if (options.asUser === true) {
+      try {
+        await telegramClient.unpinMessage(target, messageId);
+        result = true;
+      } catch (error) {
+        log.error(`Telegram message unpin error: ${error}`);
+      }
+    } else {
+      try {
+        await telegramClient.unpinChatMessage(target, messageId);
+        result = true;
+      } catch (error) {
+        log.error(`Telegram message unpin error: ${error}`);
+      }
+    }
+  } else {
+    log.error(`Telegram client is not ready!`);
+  }
+  return result;
+}
+
+async function telegramMessageOnChange(currentInputState) {
   const inputACConnectionState = cache.getItem('inputACConnectionState');
   if (currentInputState !== inputACConnectionState && telegramClient !== null) {
     const timeStampOptions = {timeStyle: 'short', dateStyle: 'short'};
@@ -747,38 +747,52 @@ function telegramMessageOnChange(currentInputState) {
         messageOptions.disable_notification = true;
       }
     }
-    telegramSendMessage(telegramTarget, telegramMessage, messageOptions)
-      .then((messageId) => {
-        log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
-        const previousMessageId = cache.getItem('lastMessageId');
-        cache.setItem('lastMessageId', messageId);
-        if (options.pinMessage) {
-          telegramPinMessage(telegramTarget, messageId)
-            .then(() => {
-              log.debug(`Telegram message with id: ${messageId} pinned to "${targetTitle}" with topic ${telegramTopicId}`);
-              if (options.unpinPrevious) {
-                if (previousMessageId !== undefined && previousMessageId !== null) {
-                  telegramUnpinMessage(telegramTarget, previousMessageId)
-                    .then(() => {
-                      log.debug(
-                        `Telegram message with id: ${previousMessageId} unpinned from "${targetTitle}" with topic ${telegramTopicId}`,
-                      );
-                    })
-                    .catch((error) => {
-                      log.error(`Telegram message unpin error: ${error}`);
-                    });
-                }
+    let messageId = 0;
+    try {
+      messageId = await telegramSendMessage(telegramTarget, telegramMessage, messageOptions);
+    } catch (error) {
+      log.error(`Telegram message error: ${error}`);
+    }
+    if (messageId > 0) {
+      log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
+      const previousMessageId = cache.getItem('lastMessageId');
+      cache.setItem('lastMessageId', messageId);
+      if (options.pinMessage) {
+        if (await telegramPinMessage(telegramTarget, messageId)) {
+          log.debug(`Telegram message with id: ${messageId} pinned to "${targetTitle}" with topic ${telegramTopicId}`);
+          if (options.unpinPrevious) {
+            if (previousMessageId !== undefined && previousMessageId !== null) {
+              if (await telegramUnpinMessage(telegramTarget, previousMessageId)) {
+                log.debug(
+                  `Telegram message with id: ${previousMessageId} unpinned from "${targetTitle}" with topic ${telegramTopicId}`,
+                );
+              } else {
+                log.warn(`Telegram message with id: ${previousMessageId} not unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
               }
-            })
-            .catch((error) => {
-              log.error(`Telegram message pin error: ${error}`);
-            });
+            } else {
+              log.warn(`No previous message to unpin from "${targetTitle}" with topic ${telegramTopicId}`);
+            }
+          }
+        } else {
+          log.warn(`Telegram message with id: ${messageId} not pinned to "${targetTitle}" with topic ${telegramTopicId}`);
         }
-      })
-      .catch((error) => {
-        log.error(`Telegram message error: ${error}`);
-      });
+      }
+    } else {
+      log.warn(`Telegram message not sent to "${targetTitle}" with topic ${telegramTopicId}`);
+    }
     cache.setItem('inputACConnectionState', currentInputState);
+  }
+}
+
+function processEcoflowResponse(response, stage) {
+  if (response?.status === 200 && response?.data?.code == 0 && typeof response?.data?.data === 'object') {
+    log.info(`Ecoflow ${stage} is successful. Getting MQTT client ...`);
+    return response.data.data;
+  } else {
+    log.error(
+      `Error: Ecoflow ${stage} failed! Response: status=${response?.status}, code=${response?.data?.code}, message=${response?.data?.message}`,
+    );
+    gracefulExit();
   }
 }
 
@@ -864,63 +878,39 @@ function mqttSubscribe() {
   });
 }
 
-function gracefulExit() {
-  const exitMqtt = () => {
-    if (mqttClient !== null && mqttClient.connected === true) {
-      mqttClient.end();
-      mqttClient = null;
-      log.info(`Ecoflow MQTT broker is disconnected!`);
-    }
-    exit(0);
-  };
+async function gracefulExit() {
   if (telegramClient !== null && options.asUser === true && telegramClient.connected === true) {
-    telegramClient
-      .disconnect()
-      .then(() => {
-        log.info(`Telegram client is disconnected!`);
-        telegramClient
-          .destroy()
-          .then(() => {
-            log.info(`Telegram client is destroyed!`);
-            telegramClient = null;
-            exitMqtt();
-          })
-          .catch((error) => {
-            log.error(`Telegram client - nothing to destroy!`);
-            exitMqtt();
-          });
-      })
-      .catch((error) => {
-        log.error(`Telegram client is not connected!`);
-        exitMqtt();
-      });
-  } else if (telegramClient !== null && options.user === false) {
     try {
-      telegramClient.stop();
-      log.info(`Telegram bot is stopped!`);
+      await telegramClient.disconnect()
+      log.info(`Telegram client is disconnected!`);
+      try {
+        await telegramClient.destroy();
+        log.info(`Telegram client is destroyed!`);
+        telegramClient = null;
       // eslint-disable-next-line sonarjs/no-ignored-exceptions
+      } catch (error) {
+        log.error(`Telegram client - nothing to destroy!`);
+      }
+    // eslint-disable-next-line sonarjs/no-ignored-exceptions
     } catch (error) {
-      log.info(`Telegram bot is stopped!`);
+      log.error(`Telegram client is not disconnected. Nothing to destroy!`);
     }
-    exitMqtt();
-  } else if (mqttClient !== null && mqttClient.connected === true) {
-    exitMqtt();
-  } else {
-    log.info('All clients are disconnected!');
-    exit(0);
+  } else if (telegramClient !== null && options.user === false) {
+    log.info(`Telegram bot is stopped!`);
   }
-}
-
-function processResponse(response, stage) {
-  if (response?.status === 200 && response?.data?.code == 0 && typeof response?.data?.data === 'object') {
-    log.info(`Ecoflow ${stage} is successful. Getting MQTT client ...`);
-    return response.data.data;
-  } else {
-    log.error(
-      `Error: Ecoflow ${stage} failed! Response: status=${response?.status}, code=${response?.data?.code}, message=${response?.data?.message}`,
-    );
-    mqttExit();
+  if (mqttClient !== null && mqttClient.connected === true) {
+    try {
+      await mqttClient.end();
+      log.info(`Ecoflow MQTT broker is disconnected!`);
+    // eslint-disable-next-line sonarjs/no-ignored-exceptions
+    } catch (error) {
+      log.error(`Ecoflow MQTT broker is not connected. Nothing to disconnect!`);
+    }
+    mqttClient = null;
+    log.info(`Ecoflow MQTT broker is disconnected!`);
   }
+  log.info('All clients are disconnected!');
+  exit(0);
 }
 
 process.on('SIGINT', gracefulExit);
@@ -952,7 +942,7 @@ process.on('SIGTERM', gracefulExit);
               sign: signature,
             },
           });
-          certResponse = processResponse(response, 'access keys certification');
+          certResponse = processEcoflowResponse(response, 'access keys certification');
           if (certResponse?.protocol === 'mqtts') {
             ecoflowTopic = `/open/${certResponse.certificateAccount}/${ecoflowDeviceSN}/quota`;
           }
@@ -972,7 +962,7 @@ process.on('SIGTERM', gracefulExit);
             },
             {headers},
           );
-          const apiResponse = processResponse(response, 'authentication');
+          const apiResponse = processEcoflowResponse(response, 'authentication');
           if (typeof apiResponse.token === 'string' && apiResponse.token.length > paramsMinLength) {
             const token = apiResponse.token;
             const {userId, name: userName} = apiResponse.user;
@@ -982,7 +972,7 @@ process.on('SIGTERM', gracefulExit);
             const response = await ecoflowAPI.get(`${ecoflowAPIUserCertificationPath}?userId=${userId}`, {
               headers: {lang: 'en_US', authorization: `Bearer ${token}`},
             });
-            certResponse = processResponse(response, 'authenticated certification');
+            certResponse = processEcoflowResponse(response, 'authenticated certification');
             mqttClientId += `_${userId}`;
               ecoflowTopic += ecoflowDeviceSN;
           } else {
