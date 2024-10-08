@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.5.4](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.3...v1.5.4) (2024-10-08)
+
+### Code Refactoring
+
+* The whole code refactored to mostly use the `await` construction instead of `.then` ([5dcb216](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/5dcb216b9df75d0b1c171b0400fdb13d38e26959))
+
 ## [1.5.3](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.2...v1.5.3) (2024-10-07)
 
 ### Code Refactoring
