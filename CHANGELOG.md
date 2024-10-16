@@ -1,5 +1,131 @@
 # Changelog
 
+## [1.5.5](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.4...v1.5.5) (2024-10-16)
+
+
+### Build System
+
+* **main:** release 1.2.7 ([ed4b482](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/ed4b4829035b421a34c9187a78be225355f83f21))
+* **main:** release 1.2.8 ([f80b237](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/f80b237c5b9f43fc9c4ad2f5d77a876af94a9a73))
+* **main:** release 1.2.9 ([420456f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/420456f017f1f20e236886a0a290dc67f9be2c93))
+* **main:** release 1.3.0 ([69d1912](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/69d1912ef54fcb8f3ddc97b7ec9343836021c480))
+* **main:** release 1.4.0 ([cba8278](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/cba82781ca5bb2a8a9ad029ac685f4600860c12c))
+* **main:** release 1.4.1 ([5be4418](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/5be44185cf610867315e1ae5f2e7b6e7179d6c3a))
+* **main:** release 1.5.0 ([2cafbf2](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/2cafbf24187058c61bc6acffb94dbcfe0f6ba78a))
+* **main:** release 1.5.1 ([e3924af](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/e3924af34d547e527b62c4ef4c932c0d9514bd87))
+* **main:** release 1.5.2 ([bb4268d](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/bb4268da17e9c3f01b81092a3dce3414e1406c55))
+* **main:** release 1.5.3 ([a015e3f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/a015e3f6495596a6b63ab0733c6285384114c723))
+* **main:** release 1.5.4 ([b864a68](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/b864a686e79cef121d148d232a8f6a8a9362fd07))
+
+
+### Continuous Integration
+
+* Add release-please configuration files ([ba5485e](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/ba5485ed4611ec506f269facf41af54e63e95c36))
+* **release-please:** run CHANGELOG.md through markdownlint-cli2 on PR's ([69a5234](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/69a5234693e0f4a98291aa653b3d6eb276d02ecb))
+* Update package-lock.json ([89f2433](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/89f24337d19bc5657caed5fc26419506acad3052))
+* Update release-please-config.json to process src/version.js ([ba6989f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/ba6989fe8423819452e7624530c3ae560ba73d76))
+* Update repo description in deploy_docker_on_tag.yml ([3135f58](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/3135f587f270ef32dcf7fa629ce2979adcbf6755))
+* Update version.js ([59e424f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/59e424fe9cfa05ea48bd77efbb686741b2b642dd))
+
+
+### Miscellaneous Chores
+
+* Add initial project configuration files and dependencies ([74f8527](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/74f8527d39289de65601c6f1c25ab5e8319f2151))
+* Additional logging of command-line options on start ([4630503](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/4630503aa51f83209e166c176449f4709157063a))
+* Bump version to 1.0.28 and improve logging module ([f04a866](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/f04a866edd8afdc7254b79ad6e73af8c42651f14))
+* Bump version to 1.0.29 and improve sonarjs rules ([16c8d20](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/16c8d20160ac49d1082ce406fdb80eddb4654c13))
+* Bump version to 1.1.2. Add docker image building for the ghcr.io and Docker Hub. Dockerfile is adopted to be built for ARM platform too. ([7356532](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/735653288dbd57c55f60504daf5b6557d7930d1a))
+* **deps-dev:** Bump @babel/core from 7.24.7 to 7.24.9 ([281c81a](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/281c81a1444e4c2387f716c5f4cdc75be785d6fc))
+* **deps-dev:** Bump @babel/core from 7.25.2 to 7.25.7 ([78ba104](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/78ba1042beb9c73da5a53cb11f46461cefb54654))
+* **deps-dev:** Bump @babel/core from 7.25.7 to 7.25.8 ([20ab12f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/20ab12fe1182a065518bb47f9d7480b949d55887))
+* **deps-dev:** Bump @babel/eslint-parser from 7.24.7 to 7.24.8 ([971a465](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/971a465faa8380bf2a34c596c518aeb3837816ef))
+* **deps-dev:** Bump @babel/eslint-parser from 7.24.8 to 7.25.1 ([6da2ac9](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/6da2ac99a111beb461adec2fc48dce66e5da5a66))
+* **deps-dev:** Bump @babel/eslint-parser from 7.25.1 to 7.25.7 ([e79b5bd](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/e79b5bdcadbb46ad5138d6bc7f4ac2d50a8a02b3))
+* **deps-dev:** Bump @babel/eslint-parser from 7.25.7 to 7.25.8 ([2c91ef3](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/2c91ef3b12ea2f2961fdc1ea2ce4113933812dbd))
+* **deps-dev:** Bump @eslint/js from 9.6.0 to 9.7.0 ([f67e559](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/f67e5593b10a95d2a3a2857f878e6c01547a8c9f))
+* **deps-dev:** Bump @eslint/js from 9.7.0 to 9.8.0 ([3f72ed4](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/3f72ed442ce0da770274e3283826dbbe2e12160e))
+* **deps-dev:** Bump @eslint/js from 9.8.0 to 9.9.1 ([6cb827b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/6cb827ba12be295e6a082287b208fc608503f01a))
+* **deps-dev:** Bump eslint from 9.6.0 to 9.7.0 ([4b99eeb](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/4b99eeb747108ca0c4d80bb959a26c7e8663ed89))
+* **deps-dev:** Bump eslint from 9.7.0 to 9.8.0 ([30a3600](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/30a3600019670d6b0426c7de400b36a1ef251e7a))
+* **deps-dev:** Bump eslint from 9.8.0 to 9.9.1 ([33a3236](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/33a3236fa3d77098a5729cadc00ad05f7ab63822))
+* **deps-dev:** Bump eslint-plugin-sonarjs from 1.0.3 to 1.0.4 ([d968d9f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/d968d9f1d48f544024353def603d84e8dcd0f2a3))
+* **deps-dev:** Bump eslint-plugin-sonarjs from 1.0.4 to 2.0.1 ([2e31d6b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/2e31d6be869d857de5895c60f0611f389881309e))
+* **deps-dev:** Bump eslint-plugin-sonarjs from 2.0.2 to 2.0.3 ([b43a5bd](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/b43a5bde5bd1bc68dc158762e8cc563b5a29d1bd))
+* **deps-dev:** Bump globals from 15.10.0 to 15.11.0 ([9d64f7e](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/9d64f7e8e98c13ed3316b0b075647456a3ca7be2))
+* **deps-dev:** Bump globals from 15.9.0 to 15.10.0 ([fda3c0e](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/fda3c0e4f8876035d471b97f6c89fd14540d7a57))
+* **deps:** Bump axios from 1.7.3 to 1.7.5 ([5c5c7c7](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/5c5c7c79bde13c4362093158ef99fd4960cc8381))
+* **deps:** Bump axios from 1.7.6 to 1.7.7 ([8cf77d6](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/8cf77d685d0fe60e0f6d7fa6ce6bed75dc290504))
+* **deps:** Bump mqtt from 5.7.3 to 5.8.0 ([db2ce4c](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/db2ce4c527771608a8474b878e425e2673164c51))
+* **deps:** Bump mqtt from 5.8.0 to 5.8.1 ([a8b2b25](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/a8b2b25c95b00efa97d6245d830edc971d303790))
+* **deps:** Bump mqtt from 5.8.1 to 5.9.1 ([757ccae](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/757ccae109096b21539b3346aeaeb6c94f86965c))
+* **deps:** Bump mqtt from 5.9.1 to 5.10.0 ([a6116b8](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/a6116b86e2377ca42351358451accc898edc964f))
+* **deps:** Bump node from 20-alpine to 22-alpine ([d5bcb66](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/d5bcb661024d834631fe383b995576330145c8a4))
+* **deps:** Bump telegram from 2.22.2 to 2.23.10 ([9e75d2e](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/9e75d2eae450f7a935a24b111f30b054555aa536))
+* **deps:** Bump telegram from 2.24.11 to 2.25.11 ([b7a426f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/b7a426f71b6460f987e32184565a3a951ece48b7))
+* **deps:** Bump telegram from 2.25.11 to 2.25.15 ([2341bdf](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/2341bdf0dd05687d738f5c8b2b6767b8425fe6a8))
+* **dev:** Add markdownlint-cli2 to improve format of documentation (README's, CHANGELOG) ([69a5234](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/69a5234693e0f4a98291aa653b3d6eb276d02ecb))
+* package-lock.json update ([88afdf6](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/88afdf6192ca2ff803ea3aa2c0c9af8e721c5fb9))
+* post [@dependabot](https://github.com/dependabot) PR's update ([0b45083](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/0b45083c669f479b03ea3544fd7793e374ff6ce0))
+* release 1.2.7 ([3f9d229](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/3f9d2297f941d772867e0d5b464a4459cd7435ff))
+* release 1.5.5 ([b7b2559](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/b7b255981f057b5f7409042debfc119a23402487))
+* Remove unnecessary entries from .gitignore ([4f483dd](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/4f483dde621bafa50caf8bb75171f6bf1519741d))
+* Remove unused `genversion` dependencies and scripts ([abbbcc7](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/abbbcc7edf65bb4a9fed7fbc83cef921d8cc084b))
+* run CHANGELOG.md through markdownlint-cli2 ([17ad16d](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/17ad16de60f14a33867d00f9a22fa0c8c785171f))
+* run CHANGELOG.md through markdownlint-cli2 ([70cc134](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/70cc134ebf1464c515168574bf454f840ec7d0f3))
+* run CHANGELOG.md through markdownlint-cli2 ([cdcdcbf](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/cdcdcbfe17ce10a5dd835d048dc58bcf2011d809))
+* Set parse mode to HTML for Telegram client ([74f30b3](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/74f30b3af0e8ba7342aad0a176a0ed2e1aa4af81))
+* Update Dockerfile and package.json versions and fix the sending message to the topic. ([f0a702e](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/f0a702e9bf62165ca19cb22ead0eca39e15651aa))
+* Update npm dependency to latest stable version ([7336c42](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/7336c422e02521ef656fff6427de14229b79ede0))
+* Update npm install command to omit dev dependencies in Dockerfile ([d89bc09](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/d89bc09791a3486472b02a7187632cffbbd4ed6c))
+* Update package.json version to 1.0.20 and add options for pinning and timestamp in Telegram messages: ([b3bbfb2](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/b3bbfb27f49294601d048d53b3efc559acf825df))
+* Update package.json version to 1.0.22, remove unused `node:http` import and update Telegram message handling ([1bb68b1](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/1bb68b11571a2e4b54eaef8dd502cef75119fdea))
+* Update package.json version to 1.0.24 and add option to set time zone for timestamp in chat messages ([b74d8d8](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/b74d8d8ae57d822600455d7d89d8615495be8205))
+* Update package.json version to 1.0.26 and update README.md ([0fa95cc](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/0fa95cc38b986f424edbb9b9802e4672163cb6de))
+
+
+### Documentation
+
+* **docker:** Refactor run chapter ([25f01aa](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/25f01aacb2ed36c52b828f1986c64971dd816811))
+* **docker:** Refactor run chapter in README-uk.md ([89f2433](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/89f24337d19bc5657caed5fc26419506acad3052))
+* Fix README's and CHANGELOG formatting through markdownlint-cli2 ([69a5234](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/69a5234693e0f4a98291aa653b3d6eb276d02ecb))
+* Fix README's sections related to the default start mode and first Docker runs ([69a5234](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/69a5234693e0f4a98291aa653b3d6eb276d02ecb))
+* Make CHANGELOG.md full of changes ([48d18e1](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/48d18e12d2cec99ecdde2e2f9e420c95ab5fa33b))
+* Update command-line options in README's ([449a92f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/449a92fa5f4ebb85d03d71b22554c81ce9eb8435))
+* Update README files with release badges ([9293bce](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/9293bce934d87f49b4b2c50907a9730edea6cff7))
+
+
+### Features
+
+* Add logging of electricity connection state changes ([a325253](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/a3252532e1ca4c169573b8907e54d0ecb852e85b))
+* Add release-please workflow ([c56d953](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/c56d953dc730961608053fab7ba0335d695365d8))
+* **docker:** Refactor Dockerfile to use ENTRYPOINT and empty CMD instruction, to have possibility to use command-line options of application directly with docker start ([25f01aa](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/25f01aacb2ed36c52b828f1986c64971dd816811))
+* New option: `nightTime` - Interval in hours, when the script is sending messages in silent mode. Format is "start:stop" in 24h format ([4630503](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/4630503aa51f83209e166c176449f4709157063a))
+* Replace `telegraf` with `grammy` ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
+
+
+### Bug Fixes
+
+* Added overrides for `whatwg-url` to version 14.0.0, to get rid of "DeprecationWarning: The `punycode` module is deprecated." ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
+* Bump version to 1.1.4 in package.json and fix bot mode check on entity validation ([39c75c7](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/39c75c72a9715f6532705677f718614d5323ce36))
+* **cache:** Fixed reading and writing the `null` or `undefined` values in `Cache` module ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
+* Debug log improvement ([4630503](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/4630503aa51f83209e166c176449f4709157063a))
+* processing the `process.env.TELEGRAM_TOPIC_ID` with zero value ([2adea5c](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/2adea5c375f8246a587058782827fac819beb440))
+* README.md formatting ([e186344](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/e186344af51357c5deba76a201808ace6c7c36f3))
+* Refactor log messages to use the 'log.error' function instead of 'logError' (missed from previous commit) ([e693719](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/e693719494ec49a0ca69fd553c7ae5d1c0368645))
+* Update name of workflow to build and push docker image ([7a383d0](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/7a383d056eb04ff6068effc326a0bf2ec77b4653))
+
+
+### Code Refactoring
+
+* `readline` replaced by `enquirer` ([ecf9157](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/ecf91579631bda2f7165ec88e59db9701bafa81b))
+* Add new command-line option for Ecoflow API URL ([449a92f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/449a92fa5f4ebb85d03d71b22554c81ce9eb8435))
+* Added authentication via access and secret keys pair, as alternative to user and password ([ecf9157](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/ecf91579631bda2f7165ec88e59db9701bafa81b))
+* Refactor logging statements in Cache.js ([bbe5932](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/bbe5932a63c9afcf1038f4e5c846981f08f66a3d))
+* Reorder processing `Telegram` and `Ecoflow MQTT` preparation and connection to avoid impossibility to send message to "unprepared" `Telegram`. ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
+* **telegram:** Code to interact with `Telegram` is rewritten, to make it more unified, independently from mode (user or bot) ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
+* The whole code refactored to mostly use the `await` construction instead of `.then` ([5dcb216](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/5dcb216b9df75d0b1c171b0400fdb13d38e26959))
+* Update version to 1.1.3 and make bot mode fully functional. ([90fb6e4](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/90fb6e462b16250b978d0f5ba19b9f2d01f35a03))
+
 ## [1.5.4](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.3...v1.5.4) (2024-10-08)
 
 ### Code Refactoring
