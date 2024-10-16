@@ -2,7 +2,6 @@
 
 ## [1.2.7](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.4...v1.2.7) (2024-10-16)
 
-
 ### Build System
 
 * **main:** release 1.2.7 ([ed4b482](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/ed4b4829035b421a34c9187a78be225355f83f21))
@@ -17,7 +16,6 @@
 * **main:** release 1.5.3 ([a015e3f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/a015e3f6495596a6b63ab0733c6285384114c723))
 * **main:** release 1.5.4 ([b864a68](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/b864a686e79cef121d148d232a8f6a8a9362fd07))
 
-
 ### Continuous Integration
 
 * Add release-please configuration files ([ba5485e](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/ba5485ed4611ec506f269facf41af54e63e95c36))
@@ -26,7 +24,6 @@
 * Update release-please-config.json to process src/version.js ([ba6989f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/ba6989fe8423819452e7624530c3ae560ba73d76))
 * Update repo description in deploy_docker_on_tag.yml ([3135f58](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/3135f587f270ef32dcf7fa629ce2979adcbf6755))
 * Update version.js ([59e424f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/59e424fe9cfa05ea48bd77efbb686741b2b642dd))
-
 
 ### Miscellaneous Chores
 
@@ -81,7 +78,6 @@
 * Update package.json version to 1.0.24 and add option to set time zone for timestamp in chat messages ([b74d8d8](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/b74d8d8ae57d822600455d7d89d8615495be8205))
 * Update package.json version to 1.0.26 and update README.md ([0fa95cc](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/0fa95cc38b986f424edbb9b9802e4672163cb6de))
 
-
 ### Documentation
 
 * **docker:** Refactor run chapter ([25f01aa](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/25f01aacb2ed36c52b828f1986c64971dd816811))
@@ -92,7 +88,6 @@
 * Update command-line options in README's ([449a92f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/449a92fa5f4ebb85d03d71b22554c81ce9eb8435))
 * Update README files with release badges ([9293bce](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/9293bce934d87f49b4b2c50907a9730edea6cff7))
 
-
 ### Features
 
 * Add logging of electricity connection state changes ([a325253](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/a3252532e1ca4c169573b8907e54d0ecb852e85b))
@@ -100,7 +95,6 @@
 * **docker:** Refactor Dockerfile to use ENTRYPOINT and empty CMD instruction, to have possibility to use command-line options of application directly with docker start ([25f01aa](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/25f01aacb2ed36c52b828f1986c64971dd816811))
 * New option: `nightTime` - Interval in hours, when the script is sending messages in silent mode. Format is "start:stop" in 24h format ([4630503](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/4630503aa51f83209e166c176449f4709157063a))
 * Replace `telegraf` with `grammy` ([044405b](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/044405b7e32fd4b53151d2e52754a22a7a872e36))
-
 
 ### Bug Fixes
 
@@ -112,7 +106,6 @@
 * README.md formatting ([e186344](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/e186344af51357c5deba76a201808ace6c7c36f3))
 * Refactor log messages to use the 'log.error' function instead of 'logError' (missed from previous commit) ([e693719](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/e693719494ec49a0ca69fd553c7ae5d1c0368645))
 * Update name of workflow to build and push docker image ([7a383d0](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/7a383d056eb04ff6068effc326a0bf2ec77b4653))
-
 
 ### Code Refactoring
 
