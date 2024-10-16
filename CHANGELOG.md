@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.5](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.4...v1.5.5) (2024-10-16)
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump @babel/core from 7.25.7 to 7.25.8 ([20ab12f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/20ab12fe1182a065518bb47f9d7480b949d55887))
+* **deps-dev:** Bump @babel/eslint-parser from 7.25.7 to 7.25.8 ([2c91ef3](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/2c91ef3b12ea2f2961fdc1ea2ce4113933812dbd))
+* **deps-dev:** Bump globals from 15.10.0 to 15.11.0 ([9d64f7e](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/9d64f7e8e98c13ed3316b0b075647456a3ca7be2))
+
 ## [1.5.4](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.3...v1.5.4) (2024-10-08)
 
 ### Code Refactoring
