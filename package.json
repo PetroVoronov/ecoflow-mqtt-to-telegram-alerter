@@ -21,7 +21,7 @@
     "mqtt": "^5.10.0",
     "node-localstorage": "^3.0.5",
     "telegram": "^2.25.15",
-    "uuid": "^10.0.0",
+    "uuid": "^11.0.2",
     "yargs": "^17.7.2"
   },
   "scripts": {
