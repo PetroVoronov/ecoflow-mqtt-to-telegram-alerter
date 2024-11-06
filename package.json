@@ -20,7 +20,7 @@
     "json-stringify-safe": "^5.0.1",
     "mqtt": "^5.10.0",
     "node-localstorage": "^3.0.5",
-    "telegram": "^2.25.15",
+    "telegram": "^2.26.6",
     "uuid": "^11.0.2",
     "yargs": "^17.7.2"
   },
