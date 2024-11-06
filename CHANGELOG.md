@@ -2,7 +2,6 @@
 
 ## [1.5.6](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.5...v1.5.6) (2024-11-06)
 
-
 ### Miscellaneous Chores
 
 * **deps-dev:** Bump @babel/core from 7.25.8 to 7.26.0 ([cc70fbc](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/cc70fbc54bc717f6a6f07ab23bb7a4174cd57d3c))
@@ -13,12 +12,10 @@
 * **deps:** Bump uuid from 10.0.0 to 11.0.2 ([71eca6e](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/71eca6eb36eb3008e08af2d7df38b3e8f847cb2e))
 * **dev:** add Jest configuration and dependency ([1623d77](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/1623d7784fb80ef09b1aaf7d06ebff7c0aa1e05d))
 
-
 ### Code Refactoring
 
 * **cache:** refactor code of Cache class with type conversion and event reactions ([1623d77](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/1623d7784fb80ef09b1aaf7d06ebff7c0aa1e05d))
 * **logging:** refactor code of SecuredLogger with sensitive data masking ([1623d77](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/1623d7784fb80ef09b1aaf7d06ebff7c0aa1e05d))
-
 
 ### Tests
 
