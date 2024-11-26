@@ -127,6 +127,7 @@ The application can be configured using the following command-line options:
 | `--as-user`                   |       | Start as user instance (bot instance by default)      | Boolean | `false` |    No    |
 | `--keep-alive`                | `-k`  | Check if the MQTT client is alive every X seconds     | Number  |  `60`   |    No    |
 | `--log-alive-status-interval` |       | Log the MQTT client alive status every Y minutes      | Number  |   `0`   |    No    |
+| `--full-reconnect-failed-count`| `-r`  | Number of failed keep alive checks to perform full reconnect | Number | `5` |    No    |
 | `--language`                  | `-l`  | Language code for i18n                                | String  |  `en`   |    No    |
 | `--pin-message`               | `-p`  | Unpin message from chat                               | Boolean | `false` |    No    |
 | `--unpin-previous`            | `-u`  | Pin message to chat                                   | Boolean | `false` |    No    |

@@ -58,6 +58,13 @@ const options = yargs
     default: 0,
     demandOption: false,
   })
+  .option('r', {
+    alias: 'full-reconnect-failed-count',
+    describe: 'Number of failed alive checks for full reconnect',
+    type: 'number',
+    default: 5,
+    demandOption: false,
+  })
   .option('l', {
     alias: 'language',
     describe: 'Language code for i18n',
@@ -131,6 +138,11 @@ if (typeof options.nightTime === 'string' && options.nightTime.length > 0) {
   }
 }
 
+if (options.fullReconnectFailedCount > 0 && options.keepAlive < 1) {
+  log.warn('Keep alive interval is less than 1 second!');
+  options.keepAlive = 60;
+}
+
 log.info(`Starting ${scriptName} v${scriptVersion} ...`);
 log.info(`Ecoflow API URL: ${ecoflowAPIURL}`);
 log.info(`Authenticate via access key: ${options.authViaAccessKey}`);
@@ -138,6 +150,7 @@ log.info(`Authenticate via username: ${options.authViaUsername}`);
 log.info(`Start as user: ${options.asUser}`);
 log.info(`Keep alive interval: ${options.keepAlive} seconds`);
 log.info(`Log alive status interval: ${options.logAliveStatusInterval} minutes`);
+log.info(`Alive check failed count for full reconnect: ${options.fullReconnectFailedCount}`);
 log.info(`Language: ${options.language}`);
 log.info(`Pin message: ${options.pinMessage}`);
 log.info(`Unpin previous: ${options.unpinPrevious}`);
@@ -196,6 +209,7 @@ let mqttOptions = null;
 let telegramClient = null;
 let lastMQTTMessageTimeStamp = new Date().getTime();
 let lastAliveInfoMessageTimeStamp = new Date().getTime();
+let keepAliveFailedCount = 0;
 
 function ecoflowAPIAccessIsValid(ecoflowAccessKey, ecoflowSecretKey) {
   return (
@@ -842,11 +856,18 @@ function mqttSetMainHandlers() {
 function mqttKeepAliveCheck() {
   const currentTimeStamp = new Date().getTime();
   if (currentTimeStamp - lastMQTTMessageTimeStamp > ecoflowMQTTKeepAliveInterval) {
-    log.warn(`Ecoflow MQTT client is not alive for ${options.keepAlive} seconds!`);
-    mqttClient.reconnect();
+    keepAliveFailedCount++;
+    if (keepAliveFailedCount >= options.fullReconnectFailedCount) {
+      log.warn(`Ecoflow MQTT client is not alive for ${options.keepAlive * options.fullReconnectFailedCount} seconds! Process full reconnect ...`);
+      mqttConnectAndSubscribe(true);
+    } else {
+      log.warn(`Ecoflow MQTT client is not alive for ${options.keepAlive} seconds! Going to reconnect ...`);
+      mqttClient.reconnect();
+    }
   } else if (ecoflowMQTTLogAliveInterval > 0 && currentTimeStamp - lastAliveInfoMessageTimeStamp > ecoflowMQTTLogAliveInterval) {
     lastAliveInfoMessageTimeStamp = currentTimeStamp;
     log.info(`Ecoflow MQTT client is alive!`);
+    keepAliveFailedCount = 0;
   } else {
     log.debug(`Ecoflow MQTT client is alive!`);
   }
@@ -878,8 +899,114 @@ function mqttSubscribe() {
   });
 }
 
-async function gracefulExit() {
-  if (telegramClient !== null && options.asUser === true && telegramClient.connected === true) {
+async function mqttConnectAndSubscribe(mqttDisconnect = false) {
+  if (mqttDisconnect) {
+    await gracefulExit(true);
+  }
+  let certResponse = {};
+  let mqttClientId = cache.getItem('mqttClientIdPrefix');
+  if (typeof mqttClientId !== 'string' || mqttClientId.length < paramsMinLength) {
+    mqttClientId = `ANDROID_${uuidv4().toUpperCase()}`;
+    cache.setItem('mqttClientIdPrefix', mqttClientId);
+  }
+  const {ecoflowAccessKey, ecoflowSecretKey, ecoflowUserName, ecoflowPassword, ecoflowDeviceSN} = await getEcoFlowCredentials();
+  if (ecoflowAPIAccessIsValid(ecoflowAccessKey, ecoflowSecretKey) ) {
+    const params = {
+      accessKey: ecoflowAccessKey,
+      // eslint-disable-next-line sonarjs/pseudo-random
+      nonce: Math.floor(Math.random() * 1000000),
+      timestamp: Date.now(),
+    };
+    const signature = createEcoFlowSignature(params, ecoflowSecretKey);
+    try {
+      const response = await ecoflowAPI.get(ecoflowAPIAccessCertificationPath, {
+        headers: {
+          ...params,
+          sign: signature,
+        },
+      });
+      certResponse = processEcoflowResponse(response, 'access keys certification');
+      if (certResponse?.protocol === 'mqtts') {
+        ecoflowTopic = `/open/${certResponse.certificateAccount}/${ecoflowDeviceSN}/quota`;
+      }
+    } catch (error) {
+      log.error(`Error: ${error}`);
+      mqttExit();
+    }
+  } else if (ecoflowAPIUserIsValid(ecoflowUserName, ecoflowPassword)) {
+    try {
+      const response = await ecoflowAPI.post(
+        ecoflowAPIAuthenticationPath,
+        {
+          email: ecoflowUserName,
+          password: Buffer.from(ecoflowPassword).toString('base64'),
+          scene: 'IOT_APP',
+          userType: 'ECOFLOW',
+        },
+        {headers},
+      );
+      const apiResponse = processEcoflowResponse(response, 'authentication');
+      if (typeof apiResponse.token === 'string' && apiResponse.token.length > paramsMinLength) {
+        const token = apiResponse.token;
+        const {userId, name: userName} = apiResponse.user;
+        log.debug(`Ecoflow token:`, {token});
+        log.debug(`Ecoflow userId:`, {userId});
+        log.debug(`Ecoflow userName:`, {userName});
+        const response = await ecoflowAPI.get(`${ecoflowAPIUserCertificationPath}?userId=${userId}`, {
+          headers: {lang: 'en_US', authorization: `Bearer ${token}`},
+        });
+        certResponse = processEcoflowResponse(response, 'authenticated certification');
+        mqttClientId += `_${userId}`;
+          ecoflowTopic += ecoflowDeviceSN;
+      } else {
+        log.error(`Error: Ecoflow authentication failed!`);
+        mqttExit();
+      }
+    } catch (error) {
+      log.error(`Error: ${error}`);
+      mqttExit();
+    }
+  }
+  if (typeof certResponse === 'object' && certResponse?.protocol === 'mqtts') {
+    const {
+      url: mqttUrl,
+      port: mqttPort,
+      protocol: mqttProtocol,
+      certificateAccount: mqttUsername,
+      certificatePassword: mqttPassword,
+    } = certResponse;
+    log.debug(`Ecoflow MQTT URL: ${mqttUrl}`);
+    log.debug(`Ecoflow MQTT port: ${mqttPort}`);
+    log.debug(`Ecoflow MQTT protocol: ${mqttProtocol}`);
+    log.debug(`Ecoflow MQTT username:`, {mqttUsername});
+    log.debug(`Ecoflow MQTT password:`, {mqttPassword});
+    log.debug(`Ecoflow MQTT client ID:`, {mqttClientId});
+    const connectMQTTUrl = `${mqttProtocol}://${mqttUrl}:${mqttPort}`;
+    mqttOptions = {
+      clientId: mqttClientId,
+      clean: true,
+      connectTimeout: 4000,
+      username: mqttUsername,
+      password: mqttPassword,
+      reconnectPeriod: 1000,
+      protocol: mqttProtocol,
+    };
+    try {
+      mqttClient = mqtt.connect(connectMQTTUrl, mqttOptions);
+      log.info('Ecoflow MQTT broker is connected.');
+      mqttSetMainHandlers();
+    } catch (error) {
+      log.error(`Ecoflow MQTT broker connection error: ${error}`);
+      gracefulExit();
+    }
+  } else {
+    log.error(`Ecoflow MQTT broker is not available!`);
+    gracefulExit();
+  }
+}
+
+async function gracefulExit(mqttOnly = false) {
+  if (telegramClient !== null && options.asUser === true && telegramClient.connected === true && mqttOnly === false) {
     try {
       await telegramClient.disconnect()
       log.info(`Telegram client is disconnected!`);
@@ -909,123 +1036,26 @@ async function gracefulExit() {
     mqttClient = null;
     log.info(`Ecoflow MQTT broker is disconnected!`);
   }
-  log.info('All clients are disconnected!');
-  exit(0);
+  if (mqttOnly === false) {
+    log.info('All clients are disconnected!');
+    exit(0);
+  }
 }
 
-process.on('SIGINT', gracefulExit);
-process.on('SIGTERM', gracefulExit);
+process.on('SIGINT', () => {gracefulExit()});
+process.on('SIGTERM', () => {gracefulExit()});
 
 (async () => {
   try {
     if (await getTelegramPrepared()) {
       log.info('Telegram is prepared. Going to connect to EcoFlow MQTT!');
-      let certResponse = {};
-      let mqttClientId = cache.getItem('mqttClientIdPrefix');
-      if (typeof mqttClientId !== 'string' || mqttClientId.length < paramsMinLength) {
-        mqttClientId = `ANDROID_${uuidv4().toUpperCase()}`;
-        cache.setItem('mqttClientIdPrefix', mqttClientId);
-      }
-      const {ecoflowAccessKey, ecoflowSecretKey, ecoflowUserName, ecoflowPassword, ecoflowDeviceSN} = await getEcoFlowCredentials();
-      if (ecoflowAPIAccessIsValid(ecoflowAccessKey, ecoflowSecretKey) ) {
-        const params = {
-          accessKey: ecoflowAccessKey,
-          // eslint-disable-next-line sonarjs/pseudo-random
-          nonce: Math.floor(Math.random() * 1000000),
-          timestamp: Date.now(),
-        };
-        const signature = createEcoFlowSignature(params, ecoflowSecretKey);
-        try {
-          const response = await ecoflowAPI.get(ecoflowAPIAccessCertificationPath, {
-            headers: {
-              ...params,
-              sign: signature,
-            },
-          });
-          certResponse = processEcoflowResponse(response, 'access keys certification');
-          if (certResponse?.protocol === 'mqtts') {
-            ecoflowTopic = `/open/${certResponse.certificateAccount}/${ecoflowDeviceSN}/quota`;
-          }
-        } catch (error) {
-          log.error(`Error: ${error}`);
-          mqttExit();
-        }
-      } else if (ecoflowAPIUserIsValid(ecoflowUserName, ecoflowPassword)) {
-        try {
-          const response = await ecoflowAPI.post(
-            ecoflowAPIAuthenticationPath,
-            {
-              email: ecoflowUserName,
-              password: Buffer.from(ecoflowPassword).toString('base64'),
-              scene: 'IOT_APP',
-              userType: 'ECOFLOW',
-            },
-            {headers},
-          );
-          const apiResponse = processEcoflowResponse(response, 'authentication');
-          if (typeof apiResponse.token === 'string' && apiResponse.token.length > paramsMinLength) {
-            const token = apiResponse.token;
-            const {userId, name: userName} = apiResponse.user;
-            log.debug(`Ecoflow token:`, {token});
-            log.debug(`Ecoflow userId:`, {userId});
-            log.debug(`Ecoflow userName:`, {userName});
-            const response = await ecoflowAPI.get(`${ecoflowAPIUserCertificationPath}?userId=${userId}`, {
-              headers: {lang: 'en_US', authorization: `Bearer ${token}`},
-            });
-            certResponse = processEcoflowResponse(response, 'authenticated certification');
-            mqttClientId += `_${userId}`;
-              ecoflowTopic += ecoflowDeviceSN;
-          } else {
-            log.error(`Error: Ecoflow authentication failed!`);
-            mqttExit();
-          }
-        } catch (error) {
-          log.error(`Error: ${error}`);
-          mqttExit();
-        }
-      }
-      if (typeof certResponse === 'object' && certResponse?.protocol === 'mqtts') {
-        const {
-          url: mqttUrl,
-          port: mqttPort,
-          protocol: mqttProtocol,
-          certificateAccount: mqttUsername,
-          certificatePassword: mqttPassword,
-        } = certResponse;
-        log.debug(`Ecoflow MQTT URL: ${mqttUrl}`);
-        log.debug(`Ecoflow MQTT port: ${mqttPort}`);
-        log.debug(`Ecoflow MQTT protocol: ${mqttProtocol}`);
-        log.debug(`Ecoflow MQTT username:`, {mqttUsername});
-        log.debug(`Ecoflow MQTT password:`, {mqttPassword});
-        log.debug(`Ecoflow MQTT client ID:`, {mqttClientId});
-        const connectMQTTUrl = `${mqttProtocol}://${mqttUrl}:${mqttPort}`;
-        mqttOptions = {
-          clientId: mqttClientId,
-          clean: true,
-          connectTimeout: 4000,
-          username: mqttUsername,
-          password: mqttPassword,
-          reconnectPeriod: 1000,
-          protocol: mqttProtocol,
-        };
-        try {
-          mqttClient = mqtt.connect(connectMQTTUrl, mqttOptions);
-          log.info('Ecoflow MQTT broker is connected.');
-          mqttSetMainHandlers();
-        } catch (error) {
-          log.error(`Ecoflow MQTT broker connection error: ${error}`);
-          gracefulExit();
-        }
-      } else {
-        log.error(`Ecoflow MQTT broker is not available!`);
-        gracefulExit();
-      }
+      await mqttConnectAndSubscribe();
     } else {
       log.error(`Telegram is not ready!`);
-      gracefulExit();
+      await gracefulExit();
     }
   } catch (error) {
     log.error(`Error: ${error}`);
-    gracefulExit();
+    await gracefulExit();
   }
 })();
