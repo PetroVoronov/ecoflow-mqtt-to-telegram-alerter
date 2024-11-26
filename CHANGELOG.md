@@ -2,7 +2,6 @@
 
 ## [1.6.0](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/compare/v1.5.6...v1.6.0) (2024-11-26)
 
-
 ### Miscellaneous Chores
 
 * **deps-dev:** Bump globals from 15.11.0 to 15.12.0 ([3ac2846](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/3ac284661517f54c4e313ced280aa945bc55b547))
@@ -12,11 +11,9 @@
 * **deps:** Bump mqtt from 5.10.1 to 5.10.3 ([4b2ba4f](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/4b2ba4f31667acef2f85b874a11653f4d63ad207))
 * **deps:** Bump uuid from 11.0.2 to 11.0.3 ([dcd4311](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/dcd43119f9469cb410004a140881e435b47225c8))
 
-
 ### Documentation
 
 * add --full-reconnect-failed-count option to README files ([2a45a56](https://github.com/PetroVoronov/ecoflow-mqtt-to-telegram-alerter/commit/2a45a5668139fba182e7e5d10f94f2aa101f00e0))
-
 
 ### Features
 
